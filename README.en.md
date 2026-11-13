@@ -27,9 +27,9 @@ browser against an isolated DSH instance (1440×900).</sub></p>
 
 ## What it is
 
-**Financial Skills** (Chinese name **金融业技能**, package name `dsh-financial-skills`) is a two-half DeepSeek Harness (DSH) plugin:
+**Financial Skills** (Chinese name **金融技能**, package name `dsh-financial-skills`) is a two-half DeepSeek Harness (DSH) plugin:
 
-- **Sidebar entry** — an icon plus the label 「金融业技能」 (shown as `Financial Skills` in an English UI). It sits after the official Plugins and Schedule entries (`order: 25`) and does not fight other third-party plugins for position.
+- **Sidebar entry** — an icon plus the label 「金融技能」 (shown as `Financial Skills` in an English UI). It sits after the official Plugins and Schedule entries (`order: 25`) and does not fight other third-party plugins for position.
 - **Full-page view** — 「金融行业skills精选」, a browsable and installable front end for the curated [openfcp/awesome-financial-skills](https://github.com/openfcp/awesome-financial-skills) catalog.
 - **Installed skills are ordinary DSH skills** — each install writes `<DSH_HOME>/skills/<id>/SKILL.md`, so the skill shows up in the current session's skill list immediately.
 
@@ -46,7 +46,7 @@ If a reference is unreachable (SkillHub down, GitHub and mirrors failing), insta
 
 ## What you see after installing
 
-1. A **金融业技能** sidebar entry appears in DSH — a 16×16 line icon of a classical bank facade (pediment, three columns, ground line);
+1. A **金融技能** sidebar entry appears in DSH — a 16×16 line icon of a classical bank facade (pediment, three columns, ground line);
 2. Clicking it replaces the main area with the full-page 「金融行业skills精选」: title and subtitle, a search box, 9 category pills, and an All / Installed switch;
 3. 17 skills are listed with name, summary, category, version and source (the license is shown honestly in the detail view);
 4. Clicking a name opens a detail modal with the rendered `SKILL.md` body, file list, total size, license and source coordinates;
@@ -91,7 +91,7 @@ Quit from the menu bar (**DeepSeek Harness → Quit**, or **Cmd+Q**), make sure 
 
 > Closing the window and reopening from the Dock is **not** a restart — the background process keeps running and the plugin will not load. This is the number-one gotcha.
 
-To verify: the **金融业技能** entry appears in the sidebar, and the page shows the data source, update time and 17 skills.
+To verify: the **金融技能** entry appears in the sidebar, and the page shows the data source, update time and 17 skills.
 
 ## Uninstall
 
@@ -180,7 +180,7 @@ Envelope: success `{ ok: true, value }`; failure `{ ok: false, error }` with sta
 
 ## FAQ
 
-**No 金融业技能 sidebar entry?**
+**No 金融技能 sidebar entry?**
 1. Make sure you fully quit and reopened (old processes gone in Activity Monitor);
 2. Check that `"dsh-financial-skills"` is in `dsh.profile.bundles` of `~/.dsh/profiles/<profile>/package.json`;
 3. Refresh the page once (Cmd+R / F5) and look again.
@@ -219,7 +219,7 @@ Details, troubleshooting and log locations: [docs/E2E.md](docs/E2E.md).
 ## Repository and feedback
 
 - Source, issues, updates: <https://github.com/openfcp/dsh-financial-skills>
-- Version: `v0.1.0` — see [CHANGELOG.md](CHANGELOG.md)
+- Version: `v0.1.1` — see [CHANGELOG.md](CHANGELOG.md)
 - Upstream catalog data: <https://github.com/openfcp/awesome-financial-skills>
 
 **When filing a bug, include**: DSH version (About panel), plugin version (`version` from `GET /api/financial-skills/health`), OS, and reproduction steps. For install failures, paste the error line shown in the page (never paste cookies or tokens).

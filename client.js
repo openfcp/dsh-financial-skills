@@ -2,7 +2,7 @@
  * dsh-financial-skills —— 浏览器半（手写 web module-loader bundle，无构建步骤）。
  *
  * 结构（自上而下）：
- *   侧栏一行（图标 + 「金融业技能」标签）   —— 只是入口，不画文字/底色
+ *   侧栏一行（图标 + 「金融技能」标签）   —— 只是入口，不画文字/底色
  *   主区整页「金融行业skills精选」          —— 页头标题/副标题/数据源行
  *     ├─ 工具栏：官方 Input 搜索 + 官方 SegmentedControl（全部插件 / 已安装 n）
  *     ├─ 分类条：官方 Pill × 10（全部 + 9 类，带条数）
@@ -66,7 +66,7 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__ !== undefined && ty
       //#region 文案（zh / en 两份字典，语言取 document.documentElement.lang）
       const DICT = {
         zh: {
-          'entry.label': '金融业技能',
+          'entry.label': '金融技能',
           'page.title': '金融行业skills精选',
           'page.subtitle': '为金融从业者策展的 AI 技能清单：按业务场景分类，标注能力边界与来源。',
           'page.sourcePrefix': '数据源',

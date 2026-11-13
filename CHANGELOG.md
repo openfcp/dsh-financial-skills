@@ -3,6 +3,12 @@
 All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/), and this project follows [Semantic Versioning](https://semver.org/).
 
+## 0.1.1 — 2026-11-13
+
+### 变更
+
+- 侧栏入口名称由「**金融业技能**」改为「**金融技能**」（英文界面仍为 `Financial Skills`，`id` / 路由 / 包名不变）。其余行为、配置项与 HTTP API 与 0.1.0 完全一致。
+
 ## 0.1.0 — 2026-11-13
 
 首个版本 / First release. 作者：八大权益。

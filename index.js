@@ -1,5 +1,5 @@
 /**
- * dsh-financial-skills（金融业技能）—— DeepSeek Harness 双半区插件的 Host 半区入口
+ * dsh-financial-skills（金融技能）—— DeepSeek Harness 双半区插件的 Host 半区入口
  *
  * Host 半区只做一件事：把上游金融行业技能目录变成六条本机 JSON 路由，供浏览器
  * 半区读取目录、识别已安装技能、安装与卸载。它不碰 DSH 源码，也不把技能正文

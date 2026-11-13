@@ -29,7 +29,7 @@ const SNAPSHOT = JSON.parse(readFileSync(SNAPSHOT_PATH, 'utf8'))
 const NOW = Date.now()
 
 const PANEL_ID = 'financial-skills'
-const ZH_LABEL = '金融业技能'
+const ZH_LABEL = '金融技能'
 const EN_LABEL = 'Financial Skills'
 const UPSTREAM_SITE = 'https://openfcp.github.io/awesome-financial-skills/'
 
@@ -435,7 +435,7 @@ test('静态：bundle 外壳、id、官方模块与语义锚点', () => {
   assert.ok(BUNDLE_SOURCE.includes('data-dsh-financial-skills-view'), '页面根节点必须带 data-dsh-financial-skills-view 锚点')
   assert.ok(BUNDLE_SOURCE.includes('data-dsh-plugin'), '页面根节点必须带 data-dsh-plugin')
   assert.ok(BUNDLE_SOURCE.includes('金融行业skills精选'), '页面标题必须是「金融行业skills精选」')
-  assert.ok(BUNDLE_SOURCE.includes('金融业技能'), '侧栏 label 必须是「金融业技能」')
+  assert.ok(BUNDLE_SOURCE.includes('金融技能'), '侧栏 label 必须是「金融技能」')
 })
 
 test('静态：API 只用文档相对路径，无第三方请求、无 alert', () => {

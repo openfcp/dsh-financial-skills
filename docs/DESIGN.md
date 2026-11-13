@@ -1,4 +1,4 @@
-# 设计规范 · 金融业技能（dsh-financial-skills）浏览器半
+# 设计规范 · 金融技能（dsh-financial-skills）浏览器半
 
 > 本文是 `client.js` 的 UI 落地对照：每个界面区域用了哪个**官方 UI 原语**、哪种**官方设计 token**、
 > 多少尺寸/间距，以及为什么这样写。实现与文字冲突时，以 `test/client-contract.test.mjs` 的断言与本文为准；
@@ -8,7 +8,7 @@
 
 | 位置 | 文案 | 说明 |
 | --- | --- | --- |
-| 插件中文名 / 侧栏行 label（zh） | **金融业技能** | 宿主左侧栏入口，用户看到的名字 |
+| 插件中文名 / 侧栏行 label（zh） | **金融技能** | 宿主左侧栏入口，用户看到的名字 |
 | 侧栏行 label（en） | **Financial Skills** | `document.documentElement.lang` 以 `en` 开头时使用 |
 | 页面标题 | **金融行业skills精选** | 主区整页标题，固定文案，不随插件名变化 |
 | 页面副标题 | 目录 `description`（上游中文/英文） | 取不到时回退本地字典文案 |
@@ -223,7 +223,7 @@ node --test test/client-contract.test.mjs
 测试覆盖：
 - **静态**：bundle id/外壳/语义锚点、官方模块 require、5 条文档相对 API、无 http(s)/`<img>`/`alert`、
   无 `#hex`/`rgb()`/`hsl()`、`var()` 白名单、reduced-motion 存在、无手写暗色选择器；
-- **注册**：侧栏 id/order/label（zh 金融业技能、en Financial Skills）、16×16 线稿图标、
+- **注册**：侧栏 id/order/label（zh 金融技能、en Financial Skills）、16×16 线稿图标、
   主区 key/financial-skills/inject 面、`apply()` 缺 slots/effect 时不抛错、卸载释放两处注册；
 - **API 客户端**：5 条文档相对路径、`cache:'no-store'`、`?refresh=1`、id URL 编码、
   POST JSON body、宿主失败信封与 HTTP 状态错误；

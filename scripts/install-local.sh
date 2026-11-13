@@ -90,7 +90,7 @@ echo "    process left. Closing the window is NOT a restart; the background"
 echo "    process keeps running and the plugin will not load."
 echo
 echo " 3. Reopen DeepSeek Harness, look at the left sidebar for the"
-echo "    \"金融业技能\" entry (English: Financial Skills) and click it — the"
+echo "    \"金融技能\" entry (English: Financial Skills) and click it — the"
 echo "    right side shows the full-page \"金融行业skills精选\" catalog."
 echo
 echo " To uninstall: ./scripts/uninstall-local.sh $profile"

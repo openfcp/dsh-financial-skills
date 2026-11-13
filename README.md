@@ -1,7 +1,7 @@
-# dsh-financial-skills · 金融业技能
+# dsh-financial-skills · 金融技能
 
 > **把「金融行业skills精选」搬进 DeepSeek Harness 的左边栏。**
-> 装一次，侧栏多一个「金融业技能」入口；点开是整页精选金融行业skill目录：搜索、按业务分类筛选、看详情、一键安装/卸载。
+> 装一次，侧栏多一个「金融技能」入口；点开是整页精选金融行业skill目录：搜索、按业务分类筛选、看详情、一键安装/卸载。
 
 [English](README.en.md) | 中文
 
@@ -10,12 +10,12 @@
 [![dsh](https://img.shields.io/badge/dsh-%3E%3D0.2.0--rc.2-4f46e5)](package.json)
 [![node](https://img.shields.io/badge/node-%3E%3D20-339933)](package.json)
 
-![金融业技能页面预览 · 浅色](docs/preview.png)
+![金融技能页面预览 · 浅色](docs/preview.png)
 
-<p align="center"><sub>浅色主题：侧栏「金融业技能」入口 + 「金融行业skills精选」整页；截图取自隔离
+<p align="center"><sub>浅色主题：侧栏「金融技能」入口 + 「金融行业skills精选」整页；截图取自隔离
 DSH 实例的真实浏览器渲染（1440×900）。</sub></p>
 
-![金融业技能页面预览 · 暗色](docs/preview-dark.png)
+![金融技能页面预览 · 暗色](docs/preview-dark.png)
 
 <p align="center"><sub>暗色主题：颜色全部来自宿主 <code>--dsw-*</code> token，插件不覆盖主题。</sub></p>
 
@@ -27,9 +27,9 @@ DSH 实例的真实浏览器渲染（1440×900）。</sub></p>
 
 ## 它是什么
 
-**金融业技能**（英文包名 `dsh-financial-skills`）是 DeepSeek Harness（DSH）的双半区插件：
+**金融技能**（英文包名 `dsh-financial-skills`）是 DeepSeek Harness（DSH）的双半区插件：
 
-- **左侧栏入口**：一个图标 +「金融业技能」标签（英文界面显示 `Financial Skills`），排在官方「插件」和「定时任务」之后，不与其它第三方插件抢位；
+- **左侧栏入口**：一个图标 +「金融技能」标签（英文界面显示 `Financial Skills`），排在官方「插件」和「定时任务」之后，不与其它第三方插件抢位；
 - **右侧整页**：「金融行业skills精选」——把 [openfcp/awesome-financial-skills](https://github.com/openfcp/awesome-financial-skills) 这份为金融从业者策展的技能清单，做成可以直接浏览、检索、安装的插件目录；
 - 页面里的每一行，安装后就是一个 DSH 原生技能（写进 `<DSH_HOME>/skills/<id>/SKILL.md`），当前对话的技能目录里能立刻看到。
 
@@ -46,7 +46,7 @@ DSH 实例的真实浏览器渲染（1440×900）。</sub></p>
 
 ## 装完你会看到什么
 
-1. 打开 DSH，左侧栏多出「金融业技能」入口（图标是银行建筑线条：三角山墙 + 三根柱子 + 地面线，16×16 stroke 风格）；
+1. 打开 DSH，左侧栏多出「金融技能」入口（图标是银行建筑线条：三角山墙 + 三根柱子 + 地面线，16×16 stroke 风格）；
 2. 点击后，右侧主区整页变成「金融行业skills精选」：顶部标题 + 副标题，下面是搜索框、9 个分类胶囊、全部/已安装切换；
 3. 17 条技能按分类列出，每条显示名称、摘要、分类、版本、来源（许可证在详情里如实显示）；
 4. 点名称打开详情弹窗：SKILL.md 正文（Markdown 渲染）、文件清单、总大小、许可证与来源坐标；
@@ -91,7 +91,7 @@ dsh plugin --profile desktop add link:$(pwd)/dsh-financial-skills
 
 > 只关掉窗口、再点 Dock 图标打开，**不算重启**——后台进程还在跑，插件不会加载。这是最容易踩的坑。
 
-装好后想确认：侧栏出现「金融业技能」→ 点开后页面显示数据源、更新时间与 17 条技能。
+装好后想确认：侧栏出现「金融技能」→ 点开后页面显示数据源、更新时间与 17 条技能。
 
 ## 卸载
 
@@ -181,7 +181,7 @@ Host 半区只注册 **6 条**精确匹配 `GET`/`POST` 路由（客户端只传
 
 ## 常见问题
 
-**侧栏没有「金融业技能」入口？**
+**侧栏没有「金融技能」入口？**
 1. 确认是**彻底退出**再打开（活动监视器里旧进程都没了）；
 2. `~/.dsh/profiles/<profile>/package.json` 的 `dsh.profile.bundles` 里确实有 `"dsh-financial-skills"`；
 3. 刷新页面（Cmd+R / F5）再试一次。
@@ -220,7 +220,7 @@ E2E 会：在工作区下的 `.e2e/` 建**独立 DSH_HOME**（绝不碰你正在
 ## 仓库与反馈
 
 - 源码、Issue、更新：<https://github.com/openfcp/dsh-financial-skills>
-- 版本：`v0.1.0`，变更记录见 [CHANGELOG.md](CHANGELOG.md)
+- 版本：`v0.1.1`，变更记录见 [CHANGELOG.md](CHANGELOG.md)
 - 技能清单的上游数据：<https://github.com/openfcp/awesome-financial-skills>
 
 **报 bug 时请附上**：DSH 版本（关于面板）、插件版本（`GET /api/financial-skills/health` 返回 `version`）、操作系统、复现步骤；涉及安装失败的请附页面上的错误行（不要附 cookie / token）。
