@@ -25,6 +25,7 @@
     "lib",
     "catalog.snapshot.json",
     "cordis.patch.yml",
+    "screenshots.json",
     "README.md",
     "README.en.md",
     "CHANGELOG.md",
