@@ -1,0 +1,49 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: node 20 / offline tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # Cheap static gates first: a syntax error or malformed JSON should fail
+      # fast, before the behavioural suites run. The package has no dependencies
+      # and no build step, so nothing needs installing.
+      - name: Static checks (syntax + JSON)
+        run: |
+          node -e "JSON.parse(require('node:fs').readFileSync('package.json', 'utf8'))"
+          node -e "JSON.parse(require('node:fs').readFileSync('catalog.snapshot.json', 'utf8'))"
+          for f in index.js client.js lib/*.js test/e2e-remote.mjs; do
+            if [ ! -e "$f" ]; then
+              echo "missing expected source file: $f" >&2
+              exit 1
+            fi
+            node --check "$f"
+          done
+
+      # The install/uninstall/e2e wrappers are POSIX sh; a syntax slip should
+      # fail here rather than on a user's machine.
+      - name: Shell syntax
+        run: |
+          for f in scripts/*.sh; do
+            echo "sh -n $f"
+            sh -n "$f"
+          done
+
+      # Unit + half-contract tests. They must pass with no network access: the
+      # host suite injects fake fetch/catalog fixtures and never calls GitHub.
+      - name: Tests (offline)
+        run: npm test

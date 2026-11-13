@@ -1,0 +1,19 @@
+# dependencies
+node_modules/
+package-lock.json
+pnpm-lock.yaml
+*.tgz
+
+# local verification scaffolding (never shipped)
+.verify/
+.e2e/
+.work/
+.npm/
+.pw/
+
+# macOS
+.DS_Store
+
+# misc
+*.log
+coverage/

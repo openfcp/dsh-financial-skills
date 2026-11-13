@@ -1,0 +1,65 @@
+{
+  "name": "dsh-financial-skills",
+  "version": "0.1.0",
+  "description": "金融业技能：DeepSeek Harness 左侧栏入口 + 金融行业skills精选（数据源 openfcp/awesome-financial-skills）",
+  "author": "八大权益 <openfcp@users.noreply.github.com> (https://github.com/openfcp)",
+  "license": "MIT",
+  "type": "module",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/openfcp/dsh-financial-skills.git"
+  },
+  "homepage": "https://github.com/openfcp/dsh-financial-skills#readme",
+  "bugs": {
+    "url": "https://github.com/openfcp/dsh-financial-skills/issues"
+  },
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "lib",
+    "catalog.snapshot.json",
+    "cordis.patch.yml",
+    "README.md",
+    "README.en.md",
+    "CHANGELOG.md",
+    "docs",
+    "scripts",
+    "test",
+    ".github"
+  ],
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "finance",
+    "financial-skills",
+    "skill-catalog",
+    "marketplace"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node --test test/host.test.mjs test/client-contract.test.mjs",
+    "test:host": "node --test test/host.test.mjs",
+    "test:client": "node --test test/client-contract.test.mjs",
+    "test:e2e": "sh scripts/run-e2e.sh"
+  },
+  "dsh": {
+    "engines": {
+      "dsh": ">=0.2.0-rc.2"
+    },
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web"
+    }
+  }
+}

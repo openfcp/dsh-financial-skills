@@ -1,0 +1,18 @@
+# dsh-financial-skills bundle layer.
+#
+# Inserts this package as one loader row in the profile composition. The row is
+# what makes both halves discoverable:
+#   - the host half (`index.js`, the package "." export) runs in the DSH service
+#     process and owns the /api/financial-skills/* route family;
+#   - the `dsh.client` declaration in package.json makes the web plugin table
+#     serve `client.js` at /plugins/dsh-financial-skills/client.js and load it in
+#     the browser, where it registers the sidebar row and the main-slot page.
+#
+# Install with:
+#   dsh plugin --profile desktop add link:<path-to-this-repo>
+# then append "dsh-financial-skills" to dsh.profile.bundles in the profile
+# package.json and fully restart DeepSeek Harness (closing the window is not a
+# restart).
+- insert:
+    - id: financial-skills
+      name: dsh-financial-skills
