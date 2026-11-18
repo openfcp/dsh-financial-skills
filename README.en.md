@@ -81,7 +81,7 @@ Prefer to look before installing? Open [docs/preview.html](docs/preview.html), o
 **1. Paste one address.** DSH → Plugins → Install plugin → Git repository:
 
 ```
-https://github.com/openfcp/dsh-financial-skills#v0.2.2
+https://github.com/openfcp/dsh-financial-skills#v0.2.3
 ```
 
 **2. Quit DSH completely and reopen it.** Menu bar → Quit (or Cmd+Q), make sure no process remains, then start again. The “Financial Skills” entry appears in the sidebar.
@@ -92,13 +92,13 @@ https://github.com/openfcp/dsh-financial-skills#v0.2.2
 
 The skill is in the current conversation's skill list — no restart, no new chat.
 
-> **Why the `#v0.2.2` suffix?** Without a ref, pnpm pins a commit of the default branch into the lockfile. Installing again resolves the same commit, prints `Already up to date`, and the plugin manager cannot attribute the change — hence “cannot determine which package was installed from the dependency change”. **Nothing is broken; it is already installed.** Upgrade with a new tag, or uninstall before reinstalling the same version. Use `#main` to track the branch.
+> **Why the `#v0.2.3` suffix?** Without a ref, pnpm pins a commit of the default branch into the lockfile. Installing again resolves the same commit, prints `Already up to date`, and the plugin manager cannot attribute the change — hence “cannot determine which package was installed from the dependency change”. **Nothing is broken; it is already installed.** Upgrade with a new tag, or uninstall before reinstalling the same version. Use `#main` to track the branch.
 
 ## Install (CLI / local development)
 
 ```sh
 # Same as pasting the address in the UI
-dsh plugin --profile desktop add https://github.com/openfcp/dsh-financial-skills#v0.2.2
+dsh plugin --profile desktop add https://github.com/openfcp/dsh-financial-skills#v0.2.3
 
 # Or: clone and install as link: (edits take effect after a restart)
 git clone https://github.com/openfcp/dsh-financial-skills.git

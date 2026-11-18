@@ -124,7 +124,7 @@
 | `--dsw-alias-border-l3` | banner 标识盒描边、元信息分隔点、卡片 hover 边框 |
 | `--dsw-alias-bg-skeleton` | 加载骨架占位 |
 | `--dsw-alias-state-success-primary` | 已安装卡片边框、「已安装」Tag、调用名、操作成功提示 |
-| `--dsw-alias-state-warn-primary` | 快照/离线提示、非实时 Tag |
+| `--dsw-alias-state-warn-primary` | 非实时 Tag（快照 / 缓存 / 离线） |
 | `--dsw-alias-state-error-primary` | 目录/刷新/详情加载错误、复制失败提示 |
 | `--dsw-radius-xl` / `--dsw-radius-lg` | banner / 卡片 / 弹窗外壳 / 骨架卡；banner 标识盒 |
 | `--ds-transition-duration`、`--ds-ease-in-out` | 唯一的过渡曲线（来自宿主核心变量，带 0.2s / ease-in-out 回退） |
@@ -138,15 +138,15 @@
 宿主的 `meta` 只有 `network` / `cache` / `snapshot` 三种来源，并可能带 `offline`、`stale`、`error`。
 **只有 `source === 'network'` 且非离线才算 live**，其余一律显式标注「非实时」。
 
-「实时 / 非实时」在两处同时出现：元信息行里的 Tag（`实时` / `非实时`）与页脚来源 Tag（更具体的原因）。
+「实时 / 非实时」在两处同时出现：元信息行里的 Tag（`实时` / `非实时`）与页脚来源 Tag（更具体的原因）。**不再有第三处**：0.2.3 删掉了目录区顶部的黄色说明行与它的第二枚「重试」，刷新只保留元信息行右侧那一枚红色胶囊。
 前者给一眼可读，后者给可追溯依据。
 
 | 宿主 meta | 元信息行 Tag | 页脚来源 Tag（zh） | 页脚 Tag tone | 页面提示行 | 页脚相对时间 |
 | --- | --- | --- | --- | --- | --- |
 | `source: network`，`offline: false` | 实时（`info`） | 上游实时目录 | `info` | 无 | 有（`n 分钟前刷新`） |
-| `source: cache` | 非实时（`warning`） | 本地缓存（非实时） | `neutral` | 「当前展示本地缓存目录（非实时）…」+ 重试 | 有 |
-| `source: snapshot` | 非实时（`warning`） | 随包快照（非实时） | `warning` | 「上游目录获取失败，当前展示随包快照（非实时）…」+ 重试 | **不显示**（快照的 fetchedAt 是本次读数，不是上游抓取时刻，避免说成「刚刚刷新」） |
-| `offline: true`（叠加在来源上） | 非实时（`warning`） | 跟随来源 | 跟随来源 | 「离线模式：当前展示的是随包快照或本地缓存，不是实时目录…」+ 重试 | 有 |
+| `source: cache` | 非实时（`warning`） | 本地缓存（非实时） | `neutral` | 无（0.2.3 起不再插说明行，状态只由 Tag 承担） | 有 |
+| `source: snapshot` | 非实时（`warning`） | 随包快照（非实时） | `warning` | 无（同上）；抓取异常另由 `.fs-banner` 报错行显示 | **不显示**（快照的 fetchedAt 是本次读数，不是上游抓取时刻，避免说成「刚刚刷新」） |
+| `offline: true`（叠加在来源上） | 非实时（`warning`） | 跟随来源 | 跟随来源 | 无（同上） | 有 |
 | `error` 存在 | — | 跟随来源 | 跟随来源 | 额外一行「目录抓取异常：<原因>」 | — |
 
 页面在快照/缓存/离线时**不清空内容**：仍可浏览完整清单、看详情、复制 SkillHub 命令；
@@ -237,7 +237,7 @@ CSS 只注入一次，注入标记：
 | 分类条 | `PanelPage` | `.fs-categoryBar/.fs-pillCount`、`data-dsh-part="category-bar"/"category-pill"` |
 | 卡片列表 / 长条卡 | `SkillCard` | `.fs-grid/.fs-card/.fs-cardMain/.fs-cardHead/.fs-cardName/.fs-cardNameEn/.fs-cardBadge/.fs-cardSummary/.fs-cardMeta/.fs-cardChips/.fs-cardFacts/.fs-cardFact/.fs-cardFactKey/.fs-cardFactVal/.fs-cardInvoke/.fs-cardInvokeCode/.fs-cardActions`、`data-dsh-part="skill-grid"/"skill-card"/"card-meta"/"card-chips"/"card-facts"/"card-actions"/"card-invocation"`、`data-field="field.*"`、`data-installed="true|false"` |
 | 刷新按钮 | `PanelPage` | `.fs-refresh/.fs-refreshIcon`、`data-dsh-part="refresh-action"`（紧随 `freshness` 之后，全页唯一） |
-| 状态 | `PanelPage` / `DetailModal` | `.fs-state/.fs-stateText/.fs-stateIcon/.fs-stateHint/.fs-banner/.fs-notice/.fs-noticeRow/.fs-noticeOk/.fs-notices/.fs-skeletons/.fs-skeletonGrid/.fs-skeletonCard` |
+| 状态 | `PanelPage` / `DetailModal` | `.fs-state/.fs-stateText/.fs-stateIcon/.fs-stateHint/.fs-banner/.fs-notice/.fs-noticeOk/.fs-notices/.fs-skeletons/.fs-skeletonGrid/.fs-skeletonCard` |
 | 页脚 | `PanelPage` | `.fs-footer/.fs-footerText/.fs-footerSpacer/.fs-spin`、`data-dsh-part="footer"/"footer-counts"` |
 | 详情 | `DetailModal` | 官方 `Modal` + `.fs-detail/.fs-detailContent/.fs-detailMeta/.fs-detailKey/.fs-detailValue/.fs-detailSource/.fs-detailTags/.fs-detailBody/.fs-detailFoot/.fs-detailFootMeta/.fs-detailFootActions/.fs-code/.fs-fileList/.fs-footHintOk/.fs-footHintError` |
 | 数据请求 | `createApi` / `requestJson` | `api/financial-skills/{catalog,installed,detail?id=,install,uninstall}` |

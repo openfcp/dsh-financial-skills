@@ -135,9 +135,6 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__ !== undefined && ty
           'meta.source.cache': '本地缓存（非实时）',
           'meta.source.snapshot': '随包快照（非实时）',
           'meta.offline': '离线模式',
-          'meta.offlineNotice': '离线模式：当前展示的是随包快照或本地缓存，不是实时目录。安装/卸载仍需宿主联网。',
-          'meta.snapshotNotice': '上游目录获取失败，当前展示随包快照（非实时）。安装仍需联网，可稍后刷新重试。',
-          'meta.cacheNotice': '当前展示本地缓存目录（非实时）。可点刷新从上游重取。',
           'meta.error': '目录抓取异常：{error}',
           'action.installFailed': '安装失败：{error}',
           'action.uninstallFailed': '卸载失败：{error}',
@@ -245,9 +242,6 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__ !== undefined && ty
           'meta.source.cache': 'Local cache (not live)',
           'meta.source.snapshot': 'Bundled snapshot (not live)',
           'meta.offline': 'Offline mode',
-          'meta.offlineNotice': 'Offline mode: showing a bundled snapshot or local cache, not the live catalog. Install and uninstall still need the host to reach the network.',
-          'meta.snapshotNotice': 'The upstream catalog could not be fetched, so the bundled snapshot is shown (not live). Installing still needs the network — refresh to retry later.',
-          'meta.cacheNotice': 'Showing the locally cached catalog (not live). Press Refresh to fetch from upstream again.',
           'meta.error': 'Catalog fetch issue: {error}',
           'action.installFailed': 'Install failed: {error}',
           'action.uninstallFailed': 'Uninstall failed: {error}',
@@ -683,7 +677,6 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__ !== undefined && ty
 .fs-stateHint{margin:0;font-size:12px;line-height:18px;color:var(--dsw-alias-label-caption)}
 .fs-banner{margin:0;font-size:13px;line-height:20px;color:var(--dsw-alias-state-error-primary);overflow-wrap:anywhere}
 .fs-notice{margin:0;font-size:12px;line-height:18px;color:var(--dsw-alias-state-warn-primary);overflow-wrap:anywhere}
-.fs-noticeRow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;min-width:0}
 .fs-noticeOk{margin:0;font-size:12px;line-height:18px;color:var(--dsw-alias-state-success-primary);overflow-wrap:anywhere}
 .fs-notices{display:flex;flex-direction:column;gap:8px}
 .fs-skeletons{display:flex;flex-direction:column;gap:12px;width:100%}
@@ -1431,20 +1424,8 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__ !== undefined && ty
           if (metaSummary.error !== undefined) {
             notices.push(h('p', { className: 'fs-banner', 'data-dsh-part': 'meta-error', key: 'meta-error' }, tt('meta.error', { error: metaSummary.error })))
           }
-          if (metaSummary.offline || metaSummary.source !== 'network') {
-            // 非实时来源不仅标注原因，还给一个就地重试入口（不弹 alert）。
-            const noticeKey = metaSummary.offline ? 'meta.offlineNotice' : metaSummary.source === 'snapshot' ? 'meta.snapshotNotice' : 'meta.cacheNotice'
-            notices.push(h('div', { className: 'fs-noticeRow', 'data-dsh-part': 'offline-notice', key: 'offline-notice' },
-              h('p', { className: 'fs-notice' }, tt(noticeKey)),
-              h(P.Button, {
-                size: 'sm',
-                variant: 'ghost',
-                disabled: refreshing,
-                icon: h(P.IconRefreshOutlineRegular, { size: 16, className: refreshing ? 'fs-spin' : undefined }),
-                onClick: () => { load('refresh') },
-              }, tt('state.retry')),
-            ))
-          }
+          // 「非实时」已由元信息行的 Tag 说明，就地重试也由右侧红色刷新按钮承担，
+          // 这里不再重复一条黄色提示 + 第二枚重试按钮（0.2.3 起移除）。
           if (actionError !== undefined) {
             notices.push(h('p', { className: 'fs-banner', 'data-dsh-part': 'action-error', key: 'action-error' }, actionError))
           }

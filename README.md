@@ -81,7 +81,7 @@ DSH 的技能生态正在以周为单位膨胀。难的不再是「找不到技�
 **1. 填一个地址安装。** DSH →「插件 → 安装插件 → Git 仓库」，粘贴：
 
 ```
-https://github.com/openfcp/dsh-financial-skills#v0.2.2
+https://github.com/openfcp/dsh-financial-skills#v0.2.3
 ```
 
 **2. 彻底退出再打开 DSH。** 菜单栏「DeepSeek Harness → 退出」（或 Cmd+Q），确认活动监视器里没有残留进程再开。侧栏就出现「金融技能」。
@@ -92,13 +92,13 @@ https://github.com/openfcp/dsh-financial-skills#v0.2.2
 
 装好的技能就出现在当前对话的技能列表里，不需要重启、不需要重新开会话。
 
-> **为什么地址要带 `#v0.2.2`？** git 依赖不带 ref 时，pnpm 会把默认分支的某个 commit 钉进 lockfile；再点安装解析出同一 commit，就只说 `Already up to date`，插件管理器无法归因，于是报「无法从依赖变更中确定安装了哪一个包」。**这不是装坏了，是它已经装着。** 升级请换新 tag 的地址；重装同版本请先卸载。想跟最新可填 `#main`。
+> **为什么地址要带 `#v0.2.3`？** git 依赖不带 ref 时，pnpm 会把默认分支的某个 commit 钉进 lockfile；再点安装解析出同一 commit，就只说 `Already up to date`，插件管理器无法归因，于是报「无法从依赖变更中确定安装了哪一个包」。**这不是装坏了，是它已经装着。** 升级请换新 tag 的地址；重装同版本请先卸载。想跟最新可填 `#main`。
 
 ## 安装（命令行 / 本地开发）
 
 ```sh
 # 从 GitHub 装（与界面上填地址等价）
-dsh plugin --profile desktop add https://github.com/openfcp/dsh-financial-skills#v0.2.2
+dsh plugin --profile desktop add https://github.com/openfcp/dsh-financial-skills#v0.2.3
 
 # 或者用仓库脚本：克隆 → link: 安装 → 写进 profile.bundles
 git clone https://github.com/openfcp/dsh-financial-skills.git
