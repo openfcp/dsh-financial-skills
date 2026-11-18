@@ -88,7 +88,7 @@ function card(skill, categoryTitle, installed) {
   const sourceLabel = skill.source !== undefined && skill.source.type === 'github' ? 'GitHub' : 'SkillHub'
   // 类别 / 来源 / 版本 / 协议 → 胶囊
   const chips = [categoryTitle, sourceLabel, version, license]
-  // 作者 / 核验日期 → 纯文本
+  // 作者 / 核验日期 → 标题行右上角纯文本
   const facts = [['作者', author], ['核验日期', verified]]
   const invoke = installed ? (skill.id.length > 22 ? skill.id.slice(0, 22) : skill.id) : ''
   return `      <li class="fs-card" data-installed="${installed ? 'true' : 'false'}">
@@ -96,14 +96,14 @@ function card(skill, categoryTitle, installed) {
           <div class="fs-cardHead">
             <button type="button" class="fs-cardName">${esc(skill.name.zh)}</button>
             <span class="fs-cardNameEn">${esc(skill.name.en)}</span>
+            <span class="fs-cardFacts">
+${facts.map(([key, value]) => `              <span class="fs-cardFact"><span class="fs-cardFactKey">${esc(key)}</span><span class="fs-cardFactVal" title="${esc(value)}">${esc(value)}</span></span>`).join('\n')}
+            </span>
           </div>
           <p class="fs-cardSummary" title="${esc(summary)}">${esc(summary)}</p>
           <div class="fs-cardMeta">
             <span class="fs-cardChips">
 ${chips.map((value) => `              <span class="pv-tag pv-tag-outline">${esc(value)}</span>`).join('\n')}
-            </span>
-            <span class="fs-cardFacts">
-${facts.map(([key, value]) => `              <span class="fs-cardFact"><span class="fs-cardFactKey">${esc(key)}</span><span class="fs-cardFactVal" title="${esc(value)}">${esc(value)}</span></span>`).join('\n')}
             </span>
           </div>
           ${installed ? `<p class="fs-cardInvoke"><span class="pv-tag pv-tag-success">已安装</span><span>调用名</span><code class="fs-cardInvokeCode">${esc(invoke)}</code></p>` : ''}
@@ -111,7 +111,7 @@ ${facts.map(([key, value]) => `              <span class="fs-cardFact"><span cla
         <div class="fs-cardActions">
           <button type="button" class="pv-btn pv-btn-ghost pv-btn-sm">详情</button>
           ${installed
-            ? '<button type="button" class="pv-btn pv-btn-ghost pv-btn-sm">卸载</button>'
+            ? '<button type="button" class="pv-btn pv-btn-outline pv-btn-sm">卸载</button>'
             : '<button type="button" class="pv-btn pv-btn-primary pv-btn-sm">安装</button>'}
         </div>
       </li>`
@@ -163,6 +163,8 @@ html,body{margin:0;padding:0;background:var(--dsw-alias-bg-base);color:var(--dsw
 .pv-btn-sm{height:26px;padding:0 9px;font-size:12.5px;line-height:24px}
 .pv-btn-ghost{color:var(--dsw-alias-label-secondary)}
 .pv-btn-ghost:hover{background:var(--dsw-alias-bg-layer-2)}
+.pv-btn-outline{border-color:var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary)}
+.pv-btn-outline:hover{border-color:var(--dsw-alias-border-l3);background:var(--dsw-alias-bg-layer-2)}
 .pv-btn-primary{background:var(--dsw-alias-brand-primary);color:#fff}
 .pv-search{display:flex;align-items:center;gap:8px;width:100%;height:32px;padding:0 10px;box-sizing:border-box;
   border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-bg-layer-1);
@@ -198,7 +200,7 @@ ${panelCss}
           <p class="fs-heroSlogan">按业务场景策展的金融 AI 技能库</p>
         </div>
         <span class="fs-heroSpacer"></span>
-        <span class="fs-heroBadge">${total} 个技能 · ${catalog.categories.length} 个分类</span>
+        <span class="fs-heroBadge">${catalog.categories.length} 个分类 · ${total} 个技能</span>
       </header>
 
       <div class="fs-metaRow" data-dsh-part="meta-row">

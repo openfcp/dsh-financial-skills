@@ -60,12 +60,12 @@ npm run preview && open docs/preview.html
 在 DSH 的「插件 → 安装插件 → Git 仓库」里填这个地址（**带版本 tag**）：
 
 ```
-https://github.com/openfcp/dsh-financial-skills#v0.2.1
+https://github.com/openfcp/dsh-financial-skills#v0.2.2
 ```
 
 装完会出现在插件列表里，**彻底重启**（Cmd+Q 后重开）即可看到侧栏「金融技能」。
 
-> ### 为什么要带 `#v0.2.1`，以及「无法从依赖变更中确定安装了哪一个包」是怎么回事
+> ### 为什么要带 `#v0.2.2`，以及「无法从依赖变更中确定安装了哪一个包」是怎么回事
 >
 > git 依赖不带 ref 时，pnpm 会把仓库默认分支的**某个 commit 钉进 lockfile**。再次点安装时，它解析出同一个
 > commit，于是输出 `Already up to date`、`package.json` 没有任何变化；插件管理器靠「依赖前后差了什么」来
@@ -75,7 +75,7 @@ https://github.com/openfcp/dsh-financial-skills#v0.2.1
 >
 > | 你的处境 | 该怎么做 |
 > | --- | --- |
-> | 已经装过旧版，想升级 | 用带新 tag 的地址（`#v0.2.1`）重新安装：spec 变了，pnpm 才会真的动 lockfile |
+> | 已经装过旧版，想升级 | 用带新 tag 的地址（`#v0.2.2`）重新安装：spec 变了，pnpm 才会真的动 lockfile |
 > | 想重装同一版本 | 先在插件列表里**卸载**，再用同一地址安装 |
 > | 想一直跟最新 | 填 `#main`；但上游没新提交时仍会 `Already up to date`，报同一句提示，属正常 |
 >
@@ -142,7 +142,7 @@ git 依赖**不会自动跟随仓库更新**——`pnpm add <同一个地址>` �
 
 ```sh
 # 1. 换成新 tag 的地址（spec 变了，pnpm 才会重新解析、lockfile 才会变）
-dsh plugin --profile desktop add https://github.com/openfcp/dsh-financial-skills#v0.2.1
+dsh plugin --profile desktop add https://github.com/openfcp/dsh-financial-skills#v0.2.2
 # 2. 彻底重启（Cmd+Q 后重开）
 ```
 

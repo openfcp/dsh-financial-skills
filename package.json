@@ -1,6 +1,6 @@
 {
   "name": "dsh-financial-skills",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "金融技能：DeepSeek Harness 左侧栏入口 + 金融行业skills精选（数据源 openfcp/awesome-financial-skills）",
   "author": "八大权益 <openfcp@users.noreply.github.com> (https://github.com/openfcp)",
   "license": "MIT",

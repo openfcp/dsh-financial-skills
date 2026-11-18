@@ -72,7 +72,7 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__ !== undefined && ty
           'page.title': '金融行业skills精选',
           'page.subtitle': '为金融从业者策展的 AI 技能清单：按业务场景分类，标注能力边界与来源。',
           'hero.slogan': '按业务场景策展的金融 AI 技能库',
-          'hero.badge': '{count} 个技能 · {categories} 个分类',
+          'hero.badge': '{categories} 个分类 · {count} 个技能',
           'page.sourcePrefix': '数据源',
           'page.sourceRepo': 'openfcp/awesome-financial-skills',
           'page.updated': '更新 {date}',
@@ -182,7 +182,7 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__ !== undefined && ty
           'page.title': 'Curated Financial Skills',
           'page.subtitle': 'A curated AI skill catalog for financial professionals — organized by business scenario, with capability boundaries and provenance made explicit.',
           'hero.slogan': 'A curator-built skill library for financial work',
-          'hero.badge': '{count} skills · {categories} categories',
+          'hero.badge': '{categories} categories · {count} skills',
           'page.sourcePrefix': 'Data source',
           'page.sourceRepo': 'openfcp/awesome-financial-skills',
           'page.updated': 'Updated {date}',
@@ -608,7 +608,8 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__ !== undefined && ty
 .fs-heroTitle{margin:0;font-size:19px;font-weight:600;line-height:26px;letter-spacing:.2px}
 .fs-heroSlogan{margin:0;font-size:12.5px;line-height:18px;color:var(--dsw-alias-label-secondary)}
 .fs-heroSpacer{flex:1}
-.fs-heroBadge{flex:none;padding:4px 10px;border:.5px solid var(--dsw-alias-border-l2);border-radius:999px;color:var(--dsw-alias-label-secondary);font-size:11.5px;line-height:16px;font-variant-numeric:tabular-nums;white-space:nowrap}
+/* 统计胶囊：分类在前、技能条数在后，数字随目录实时变化（tabular-nums 让宽度不跳动） */
+.fs-heroBadge{flex:none;padding:5px 12px;border:.5px solid var(--dsw-alias-border-l2);border-radius:999px;color:var(--dsw-alias-label-secondary);font-size:13px;line-height:18px;font-weight:500;letter-spacing:.2px;font-variant-numeric:tabular-nums;white-space:nowrap}
 
 /* 一行元信息：数据源 · 更新 · 「实时/非实时」+ 紧贴其右的全页唯一红色刷新按钮 */
 .fs-metaRow{display:flex;flex-wrap:wrap;align-items:center;gap:10px;min-width:0;font-size:12px;line-height:18px;color:var(--dsw-alias-label-tertiary)}
@@ -649,26 +650,30 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__ !== undefined && ty
 .fs-card[data-installed="true"]{border-color:var(--dsw-alias-state-success-primary)}
 .fs-card[data-installed="true"]:hover{border-color:var(--dsw-alias-state-success-primary)}
 .fs-cardMain{display:flex;flex:1;flex-direction:column;gap:5px;min-width:0}
-.fs-cardHead{display:flex;align-items:center;gap:8px;min-width:0}
+.fs-cardHead{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 8px;min-width:0}
 .fs-cardName{min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border:0;background:0 0;color:inherit;font:inherit;font-size:14.5px;font-weight:600;line-height:21px;text-align:left;cursor:pointer;padding:0}
 .fs-cardName:hover{text-decoration:underline;text-underline-offset:3px}
 .fs-cardNameEn{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary);font-size:11.5px;line-height:16px}
 .fs-cardSummary{display:-webkit-box;overflow:hidden;-webkit-box-orient:vertical;-webkit-line-clamp:1;margin:0;color:var(--dsw-alias-label-tertiary);font-size:12px;line-height:18px}
-/* 类别 / 来源 / 版本 / 协议 → 胶囊；作者 / 核验日期 → 纯文本 */
+/* 类别 / 来源 / 版本 / 协议 → 胶囊；作者 / 核验日期 → 卡片右上角纯文本（与中英名同一行）。
+   两项各自是「键 + 定宽值列（10ch）」的两列网格，所以整块的宽度对所有卡片都一样：
+   姓名长短只影响名称那一侧，作者列与日期列在纵向上一一对齐，右边缘也齐。 */
 .fs-cardMeta{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin:0;min-width:0}
 .fs-cardChips{display:inline-flex;flex-wrap:wrap;align-items:center;gap:6px;min-width:0}
-.fs-cardFacts{display:inline-flex;flex-wrap:wrap;align-items:center;gap:4px 12px;min-width:0;font-size:11.5px;line-height:16px;color:var(--dsw-alias-label-tertiary)}
-.fs-cardFact{display:inline-flex;align-items:baseline;gap:4px;min-width:0}
-.fs-cardFactKey{flex:none;color:var(--dsw-alias-label-caption)}
-.fs-cardFactVal{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-secondary)}
+.fs-cardFacts{display:inline-flex;flex:none;align-items:baseline;gap:0 14px;min-width:0;margin-left:auto;font-size:11.5px;line-height:16px;color:var(--dsw-alias-label-tertiary)}
+.fs-cardFact{display:grid;grid-template-columns:max-content 10ch;align-items:baseline;gap:0 4px;min-width:0}
+.fs-cardFactKey{color:var(--dsw-alias-label-caption);white-space:nowrap}
+.fs-cardFactVal{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-secondary);font-variant-numeric:tabular-nums}
 .fs-cardInvoke{display:flex;align-items:center;gap:6px;min-width:0;font-size:11.5px;line-height:16px;color:var(--dsw-alias-state-success-primary)}
 .fs-cardInvokeCode{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--ds-font-family-code,ui-monospace,monospace);font-size:11.5px}
 .fs-cardInvokeMuted{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary);font-size:11.5px;line-height:16px}
 .fs-cardActions{display:flex;flex:none;align-items:center;gap:6px}
-/* 窄容器：长条卡改为上下两段（信息在上、动作在下），不挤成一坨 */
+/* 窄容器：长条卡改为上下两段（信息在上、动作在下），不挤成一坨；banner 统计胶囊换到第二行 */
 @media (max-width:720px){
   .fs-card{flex-direction:column;align-items:stretch;gap:10px}
   .fs-cardActions{justify-content:flex-end}
+  .fs-hero{flex-wrap:wrap}
+  .fs-heroSpacer{display:none}
 }
 
 /* 状态 / 提示 */
@@ -807,8 +812,8 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__ !== undefined && ty
       /**
        * 一张技能长条卡：一行一条，自上而下排列。
        *
-       * 左段（弹性）：中文名 + 英文名 + 一行摘要 + 类别/来源/版本/协议四枚胶囊
-       * + 作者与核验日期（纯文本）；右段（定宽）：详情 / 安装 动作。
+       * 左段（弹性）：第一行中文名 + 英文名，行尾右上角是作者与核验日期（纯文本）；
+       * 第二行一行摘要；第三行类别/来源/版本/协议四枚胶囊。右段（定宽）：详情 / 安装 / 卸载 动作。
        *
        * 已安装的卡片换一种外边框颜色（`data-installed`），并把调用名亮出来——
        * 技能列表里按的是 frontmatter 的 name，常常和目录 id 不一样。
@@ -836,7 +841,7 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__ !== undefined && ty
           'data-installed': installed ? 'true' : 'false',
         },
           h('div', { className: 'fs-cardMain' },
-            h('div', { className: 'fs-cardHead' },
+            h('div', { className: 'fs-cardHead', 'data-dsh-part': 'card-head' },
               h('button', {
                 type: 'button',
                 className: 'fs-cardName',
@@ -844,6 +849,16 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__ !== undefined && ty
                 onClick: props.onOpen,
               }, displayName),
               secondary !== '' ? h('span', { className: 'fs-cardNameEn' }, secondary) : null,
+              // 作者 / 核验日期 → 与中英名同一行的右上角（margin-left:auto 顶到最右；窄屏自动换行）
+              h('span', { className: 'fs-cardFacts', 'data-dsh-part': 'card-facts' },
+                pairs.filter((pair) => !pair.capsule).map((pair) => h('span', {
+                  className: 'fs-cardFact',
+                  key: pair.key,
+                  'data-field': pair.key,
+                },
+                  h('span', { className: 'fs-cardFactKey' }, tt(pair.key)),
+                  h('span', { className: 'fs-cardFactVal', title: pair.value }, pair.value),
+                ))),
             ),
             h('p', { className: 'fs-cardSummary', title: summary !== '' ? summary : undefined },
               summary !== '' ? summary : tt('card.noSummary'),
@@ -856,16 +871,6 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__ !== undefined && ty
                   tone: 'outline',
                   'data-field': pair.key,
                 }, pair.value))),
-              // 作者 / 核验日期 → 纯文本
-              h('span', { className: 'fs-cardFacts', 'data-dsh-part': 'card-facts' },
-                pairs.filter((pair) => !pair.capsule).map((pair) => h('span', {
-                  className: 'fs-cardFact',
-                  key: pair.key,
-                  'data-field': pair.key,
-                },
-                  h('span', { className: 'fs-cardFactKey' }, tt(pair.key)),
-                  h('span', { className: 'fs-cardFactVal', title: pair.value }, pair.value),
-                ))),
             ),
             // 已安装：「已安装」标签落在这行最前面，紧跟着才是调用名（标签贴在标题旁会把名称挤短）
             installed
@@ -895,7 +900,8 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__ !== undefined && ty
             installed
               ? h(P.Button, {
                 size: 'sm',
-                variant: 'ghost',
+                // outline：卸载是「有边框的次级动作」，灰描边比 ghost 更明确是按钮
+                variant: 'outline',
                 disabled: cardBusy,
                 onClick: props.onUninstall,
               }, uninstalling ? tt('card.uninstalling') : tt('card.uninstall'))
@@ -1183,6 +1189,23 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__ !== undefined && ty
         const metaSummary = useMemo(() => summarizeMeta(meta, Date.now(), lang), [meta, lang])
         const totalCount = decorated.length
 
+        /**
+         * 分类数：以目录声明的分类为准；目录没声明分类时退回「技能里实际出现过的分类」，
+         * 两种来源都跟着目录走，所以数字永远和当前清单一致，不写死。
+         */
+        const categoryCount = useMemo(() => {
+          if (categories.length > 0) return categories.length
+          const seen = {}
+          let count = 0
+          for (const skill of decorated) {
+            const key = typeof skill.category === 'string' ? skill.category : ''
+            if (key === '' || seen[key] === true) continue
+            seen[key] = true
+            count += 1
+          }
+          return count
+        }, [categories, decorated])
+
         /** 安装 / 卸载：串行（busy 期间忽略重复触发），成功后静默重取目录刷新 installed 标记。 */
         const runAction = async (id, kind) => {
           if (busy !== undefined || actionLock.current) return
@@ -1285,7 +1308,9 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__ !== undefined && ty
           h('span', { className: 'fs-heroSpacer' }),
           // 条数用 tabular-nums：加载完成后胶囊宽度不跳动。
           h('span', { className: 'fs-heroBadge', 'data-dsh-part': 'hero-badge' },
-            tt('hero.badge', { count: String(totalCount), categories: String(categories.length) }),
+            catalog === undefined
+              ? '—'
+              : tt('hero.badge', { categories: String(categoryCount), count: String(totalCount) }),
           ),
         )
 

@@ -60,7 +60,7 @@
 | 3 | banner 标识 | 内联 22×22 `svg`：**四块 `rx=3` 圆角方 + 每块一个半圆凸榫**（圆心落在方边上，只露一半），顺时针首尾相扣；每块是 `<g opacity>` 包 `rect` + `circle` | 盒描边 `--dsw-alias-border-l3`、底色 `--dsw-alias-bg-layer-2`、图标色 `--dsw-alias-label-secondary`；块面 `fill="currentColor"` + 4 档组透明度（0.9 / 0.62 / 0.38 / 0.7）→ **灰白色调**，亮/暗自动跟随 | 44×44 盒、图标 22、圆角 `--dsw-radius-lg`、凸榫 `r=1.9` |
 | 4 | banner 标题 | `<h1>` | `--dsw-alias-label-primary` | `19/26/600`、字距 `0.2px` |
 | 5 | banner slogan | `<p>`（固定文案） | `--dsw-alias-label-secondary` | `12.5/18` |
-| 6 | banner 统计胶囊 | `<span>`（非交互，只读数字） | 边框 `--dsw-alias-border-l2`、文字 `--dsw-alias-label-secondary` | `padding 4 10`、`11.5/16`、`tabular-nums`、`border-radius 999px` |
+| 6 | banner 统计胶囊 | `<span>`（非交互，只读数字）**「{分类数} 个分类 · {技能数} 个技能」——分类在前、条数在后，两个数字都从当前目录算，不写死** | 边框 `--dsw-alias-border-l2`、文字 `--dsw-alias-label-secondary` | `padding 5 12`、`13/18/500`、字距 `0.2px`、`tabular-nums`、`border-radius 999px`；窄屏（≤720px）banner 换行，胶囊落到标题下方 |
 | 7 | 元信息行 | `<div>` + `<span>` 键值对 + 官方 `Tag`（实时/非实时）+ **紧贴其右的原生 `<button>`（刷新）** | 键 `--dsw-alias-label-caption`、值 `--dsw-alias-label-secondary`、分隔点 `--dsw-alias-border-l3`；Tag tone `info`（实时）/ `warning`（非实时）；刷新**浅红底（10%）+ 红描边（45%）+ 红字**，全部由 `--dsw-alias-state-error-primary` 经 `color-mix` 调出来，不写死红色 | `12/18`、`gap 10`、`tabular-nums`；刷新 `height 26`、`padding 0 11`、胶囊圆角、图标 14 |
 | 8 | 工具栏 | `<div>` 布局容器（搜索左、视图右，中间 `flex:1` 撑开） | — | `gap 12`、`flex-wrap` |
 | 9 | 搜索框 | 官方 `Input`（`type=search`）+ 官方 `IconSearchOutlineRegular` 前置图标 | 原语自带（含 focus 环） | 容器 `flex:0 1 360px; min-width:200px; max-width:360px`；图标 16 |
@@ -73,9 +73,9 @@
 | 16 | 卡片英文名 | `<span>` | `--dsw-alias-label-tertiary` | `11.5/16`；与中文名相同则不渲染 |
 | 17 | 卡片摘要 | `<p>`，`-webkit-line-clamp: 1`，`title` 给全文 | `--dsw-alias-label-tertiary` | `12/18`（单行，长条卡不再预留两行高度） |
 | 18 | 卡片元信息 · **胶囊** | 官方 `Tag` `tone="outline"` × 4：类别 / 来源 / 版本 / 协议（缺值写「未标注」，不隐藏） | 原语自带描边与底色 | `11.5/16`、`gap 6`、`flex-wrap` |
-| 18b | 卡片元信息 · **纯文本** | `<span>` 键值对 × 2：作者 / 核验日期 | 键 `--dsw-alias-label-caption`、值 `--dsw-alias-label-secondary` | `11.5/16`、gap `4px 12px` |
+| 18b | 卡片标题行 · **右上角纯文本** | `<span>` 键值对 × 2：作者 / 核验日期，装在 `.fs-cardHead` 尾部（与中英名同一行，`margin-left:auto` 顶到最右；窄屏整块换行）。两项各是 `grid-template-columns: max-content 10ch` 的**定宽两列**——键宽由文字定、值列恒为 `10ch`，整块宽度因此对每张卡片都一样，**作者列与日期列纵向对齐**，姓名/作者名长短都不会把日期推来推去 | 键 `--dsw-alias-label-caption`、值 `--dsw-alias-label-secondary` | `11.5/16`、两项间距 `14`、键值间距 `4`、值列 `10ch` 省略号、`tabular-nums` |
 | 19 | 卡片调用名（已安装才出现） | `<p>`：**官方 `Tag`（已安装）打头** + 「调用名」 + `<code>`；缺调用名时用一句话兜底 | 标签 `--dsw-alias-state-success-primary`、代码 `--ds-font-family-code`、兜底文案 `--dsw-alias-label-tertiary` | `11.5/16`、gap 6、值省略号截断 |
-| 20 | 卡片动作 | 官方 `Button` `size="sm"`，装在 `.fs-cardActions`（定宽、不与信息抢位） | `variant="primary"`（安装）/ `variant="ghost"`（详情、卸载） | 原语自带；`gap 6`、窄屏（≤720px）时换行到卡片下方并右对齐 |
+| 20 | 卡片动作 | 官方 `Button` `size="sm"`，装在 `.fs-cardActions`（定宽、不与信息抢位） | `variant="primary"`（安装）/ `variant="ghost"`（详情）/ `variant="outline"`（卸载，**带灰描边**） | 原语自带；`gap 6`、窄屏（≤720px）时换行到卡片下方并右对齐 |
 | 21 | 加载态 | 官方 `TextShimmer` + 6 条卡片骨架；**banner / 元信息行（含刷新按钮）/ 工具条 / 分割线照常渲染** | 骨架底色 `--dsw-alias-bg-skeleton`、文案 `--dsw-alias-label-tertiary` | 骨架条 `height 78`、`radius xl`、`role="status"` |
 | 22 | 错误态 | 官方 `IconWarningTriangleOutlineRegular` + `Button variant="outline"` | `--dsw-alias-state-error-primary`（文案） | 图标 28、`13/20`、`padding 40 16` |
 | 23 | 空结果态 | 官方 `IconSkillOutlineRegular` + `Button variant="outline"`（清空筛选） | `--dsw-alias-label-tertiary` / `--dsw-alias-label-caption` | 图标 28、`13/20` + `12/18` |
@@ -83,7 +83,7 @@
 | 25 | 详情弹窗 | 官方 `Modal`（open/title/description/footer/closeLabel） | 原语自带（遮罩/层级/焦点管理） | `width: min(720px,100%)`、`max-height: min(760px,100%)` |
 | 26 | 详情元信息 | `<dl>` grid（`max-content 1fr`）+ 官方 `Tag` | 键 `--dsw-alias-label-caption`、值 `--dsw-alias-label-primary`、分隔线 `--dsw-alias-border-l2` | `13/20`、gap `4px 16px` |
 | 27 | 详情正文 | 官方 `MarkdownText`（`variant="body"`，传 labels） | 原语自带 | 自适应 |
-| 28 | 详情 footer | 官方 `Button size="sm"`：安装/卸载、复制 SkillHub 命令、打开来源站 | primary/ghost/outline；成功/失败提示用 `--dsw-alias-state-success-primary` / `--dsw-alias-state-error-primary` | gap 8、可换行 |
+| 28 | 详情 footer | 官方 `Button size="sm"`：安装/卸载、复制 SkillHub 命令、打开来源站 | `primary`（安装）/ `outline`（卸载、复制命令）/ `ghost`（打开来源站）；成功/失败提示用 `--dsw-alias-state-success-primary` / `--dsw-alias-state-error-primary` | gap 8、可换行 |
 | 29 | 文件清单 | `<code>` 小标签（最多 12 个 + 剩余计数） | `--ds-font-family-code`（官方核心字体 token，带 `ui-monospace` 回退） | `12.5px`、gap 6 |
 | 30 | 页脚（更新日期一览，保持原样） | `<footer>` + 官方 `Tag`（来源）；**不再放刷新按钮**——同一屏只留一个刷新入口 | 分隔线 `--dsw-alias-border-l2`；文字 `--dsw-alias-label-tertiary` | `12/18`、gap 12、`padding 8 0 4` |
 

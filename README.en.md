@@ -58,12 +58,12 @@ If a reference is unreachable (SkillHub down, GitHub and mirrors failing), insta
 In DSH, open **Plugins → Install plugin → Git repository** and paste the address **including the version tag**:
 
 ```
-https://github.com/openfcp/dsh-financial-skills#v0.2.1
+https://github.com/openfcp/dsh-financial-skills#v0.2.2
 ```
 
 It appears in the plugin list after install; **fully restart** (Cmd+Q, then reopen) and the 金融技能 sidebar entry shows up.
 
-> ### Why the `#v0.2.1` suffix — and what "cannot determine which package was installed from the dependency change" means
+> ### Why the `#v0.2.2` suffix — and what "cannot determine which package was installed from the dependency change" means
 >
 > A git dependency without a ref pins the default branch to **one specific commit** in the lockfile. Clicking install
 > again resolves to the same commit, pnpm prints `Already up to date`, and `package.json` does not change. The plugin
@@ -74,7 +74,7 @@ It appears in the plugin list after install; **fully restart** (Cmd+Q, then reop
 >
 > | Situation | What to do |
 > | --- | --- |
-> | Upgrading from an older version | Re-install with the new tag (`#v0.2.1`): the spec changes, so pnpm actually rewrites the lockfile |
+> | Upgrading from an older version | Re-install with the new tag (`#v0.2.2`): the spec changes, so pnpm actually rewrites the lockfile |
 > | Reinstalling the same version | **Uninstall** it in the plugin list first, then install with the same URL |
 > | Tracking the latest | Use `#main`; when upstream has no new commit you still get `Already up to date` and the same notice — that is expected |
 >
@@ -142,7 +142,7 @@ Git dependencies **do not follow the repository automatically** — `pnpm add <t
 
 ```sh
 # 1. Switch to the new tag (the spec changes, so pnpm re-resolves and the lockfile changes)
-dsh plugin --profile desktop add https://github.com/openfcp/dsh-financial-skills#v0.2.1
+dsh plugin --profile desktop add https://github.com/openfcp/dsh-financial-skills#v0.2.2
 # 2. Fully restart (Cmd+Q, then reopen)
 ```
 
