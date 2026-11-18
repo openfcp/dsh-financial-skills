@@ -78,7 +78,7 @@ const esc = (value) => String(value)
   .replace(/>/g, '&gt;')
   .replace(/"/g, '&quot;')
 
-/** 卡片：与 SkillCard 的类名一一对应（不含交互，纯静态）。 */
+/** 长条卡片：与 SkillCard 的类名一一对应（不含交互，纯静态）。 */
 function card(skill, categoryTitle, installed) {
   const summary = skill.summary !== undefined && skill.summary.zh !== undefined ? skill.summary.zh : ''
   const author = typeof skill.author === 'string' && skill.author !== '' ? skill.author : '未标注'
@@ -86,30 +86,30 @@ function card(skill, categoryTitle, installed) {
   const license = skill.license === 'proprietary' ? '专有' : (typeof skill.license === 'string' && skill.license !== '' ? skill.license : '未标注')
   const verified = typeof skill.verified_at === 'string' && skill.verified_at !== '' ? skill.verified_at : '未标注'
   const sourceLabel = skill.source !== undefined && skill.source.type === 'github' ? 'GitHub' : 'SkillHub'
-  const pairs = [
-    ['类别', categoryTitle],
-    ['版本', version],
-    ['来源', sourceLabel],
-    ['协议', license],
-    ['作者', author],
-    ['核验日期', verified],
-  ]
+  // 类别 / 来源 / 版本 / 协议 → 胶囊
+  const chips = [categoryTitle, sourceLabel, version, license]
+  // 作者 / 核验日期 → 纯文本
+  const facts = [['作者', author], ['核验日期', verified]]
   const invoke = installed ? (skill.id.length > 22 ? skill.id.slice(0, 22) : skill.id) : ''
   return `      <li class="fs-card" data-installed="${installed ? 'true' : 'false'}">
-        <div class="fs-cardHead">
-          <div class="fs-cardTitles">
+        <div class="fs-cardMain">
+          <div class="fs-cardHead">
             <button type="button" class="fs-cardName">${esc(skill.name.zh)}</button>
             <span class="fs-cardNameEn">${esc(skill.name.en)}</span>
+            ${installed ? '<span class="fs-cardBadge"><span class="pv-tag pv-tag-success">已安装</span></span>' : ''}
           </div>
-          ${installed ? '<span class="pv-tag pv-tag-success">已安装</span>' : ''}
+          <p class="fs-cardSummary" title="${esc(summary)}">${esc(summary)}</p>
+          <div class="fs-cardMeta">
+            <span class="fs-cardChips">
+${chips.map((value) => `              <span class="pv-tag pv-tag-outline">${esc(value)}</span>`).join('\n')}
+            </span>
+            <span class="fs-cardFacts">
+${facts.map(([key, value]) => `              <span class="fs-cardFact"><span class="fs-cardFactKey">${esc(key)}</span><span class="fs-cardFactVal" title="${esc(value)}">${esc(value)}</span></span>`).join('\n')}
+            </span>
+          </div>
+          ${installed && invoke !== '' ? `<p class="fs-cardInvoke"><span>调用名</span><code class="fs-cardInvokeCode">${esc(invoke)}</code></p>` : ''}
         </div>
-        <p class="fs-cardSummary" title="${esc(summary)}">${esc(summary)}</p>
-        <dl class="fs-cardMeta">
-${pairs.map(([key, value]) => `          <div class="fs-cardMetaPair"><dt class="fs-cardMetaKey">${esc(key)}</dt><dd class="fs-cardMetaVal" title="${esc(value)}">${esc(value)}</dd></div>`).join('\n')}
-        </dl>
-        ${installed && invoke !== '' ? `<p class="fs-cardInvoke"><span>调用名</span><code class="fs-cardInvokeCode">${esc(invoke)}</code></p>` : ''}
-        <div class="fs-cardFoot">
-          <span class="fs-cardFootSpacer"></span>
+        <div class="fs-cardActions">
           <button type="button" class="pv-btn pv-btn-ghost pv-btn-sm">详情</button>
           ${installed
             ? '<button type="button" class="pv-btn pv-btn-ghost pv-btn-sm">卸载</button>'
@@ -159,7 +159,7 @@ html,body{margin:0;padding:0;background:var(--dsw-alias-bg-base);color:var(--dsw
 .pv-tag-success{color:var(--dsw-alias-state-success-primary);background:color-mix(in srgb,var(--dsw-alias-state-success-primary) 12%,transparent)}
 .pv-tag-info{color:var(--dsw-alias-brand-primary);background:color-mix(in srgb,var(--dsw-alias-brand-primary) 12%,transparent)}
 .pv-tag-warning{color:var(--dsw-alias-state-warn-primary);background:color-mix(in srgb,var(--dsw-alias-state-warn-primary) 14%,transparent)}
-.pv-tag-neutral{color:var(--dsw-alias-label-tertiary);background:var(--dsw-alias-bg-layer-2)}
+.pv-tag-neutral{color:var(--dsw-alias-label-tertiary);background:var(--dsw-alias-bg-layer-2)}\n.pv-tag-outline{color:var(--dsw-alias-label-secondary);border:.5px solid var(--dsw-alias-border-l2);border-radius:999px;padding:0 8px;line-height:18px;height:20px}
 .pv-btn{display:inline-flex;align-items:center;justify-content:center;gap:4px;border:1px solid transparent;border-radius:8px;cursor:pointer;font:inherit;background:0 0;color:inherit}
 .pv-btn-sm{height:26px;padding:0 9px;font-size:12.5px;line-height:24px}
 .pv-btn-ghost{color:var(--dsw-alias-label-secondary)}
@@ -206,11 +206,10 @@ ${panelCss}
         <span class="fs-metaItem"><span class="fs-metaKey">数据源</span><span class="fs-metaVal">openfcp/awesome-financial-skills</span></span>
         <span class="fs-metaDot">·</span>
         <span class="fs-metaItem"><span class="fs-metaVal">更新 ${esc(catalog.updated)}</span></span>
-        <span class="fs-metaDot">·</span>
-        <span class="fs-metaItem"><span class="fs-metaVal">核验 ${esc(catalog.verified_at)}</span></span>
         <span class="pv-tag pv-tag-info">实时</span>
-        <span class="fs-metaSpacer"></span>
-        <span class="fs-metaItem"><button type="button" class="pv-btn pv-btn-ghost pv-btn-sm">刷新</button></span>
+        <button type="button" class="fs-refresh">
+          <span class="fs-refreshIcon"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" aria-hidden="true"><path d="M13 8a5 5 0 1 1-1.6-3.7"></path><path d="M12.4 1.9v2.6h-2.6"></path></svg></span>刷新
+        </button>
       </div>
 
       <div class="fs-toolbar" data-dsh-part="toolbar">
@@ -242,8 +241,6 @@ ${shown.map((skill) => card(
         <p class="fs-footerText">2 分钟前刷新</p>
         <p class="fs-footerText">共 ${total} 个 · 已安装 2 个 · 显示 ${total} 个</p>
         <span class="pv-tag pv-tag-info">上游实时目录</span>
-        <span class="fs-footerSpacer"></span>
-        <button type="button" class="pv-btn pv-btn-ghost pv-btn-sm">刷新</button>
       </footer>
 
     </div>

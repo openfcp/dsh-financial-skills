@@ -44,13 +44,13 @@ npm run preview && open docs/preview.html
 ## 装完你会看到什么
 
 1. 打开 DSH，左侧栏多出「金融技能」入口（图标是银行建筑线条：三角山墙 + 三根柱子 + 地面线，16×16 stroke 风格）；
-2. 点击后，右侧主区整页变成「金融行业skills精选」：最上面是 banner（标识 + 标题 + slogan + 「N 个技能 · M 个分类」），下面一行是**数据源 · 更新日期 · 核验日期 · 实时/非实时 · 刷新**；
+2. 点击后，右侧主区整页变成「金融行业skills精选」：最上面是 banner（标识 + 标题 + slogan + 「N 个技能 · M 个分类」），下面一行是**数据源 · 更新日期 · 实时/非实时 · 刷新**——刷新是一个**紧贴在「实时/非实时」右侧的红色胶囊按钮**，全页只有这一个刷新入口；
 3. 再下一行是**搜索框（左）+ 全部插件/已安装（右）**，一条横分割线之后是**胶囊分类**；
-4. 下面是**技能卡片网格**：中文名 + 英文名、两行摘要、类别 / 版本 / 来源 / 协议 / 作者 / 核验日期六项元信息。卡片默认**浅灰外边框**，**已安装的换另一种颜色**并标出「已安装」；
+4. 下面是**一行一条的长条技能卡**（自上而下排列）：中文名 + 英文名、一行摘要；元信息里**类别 / 来源 / 版本 / 协议是四枚胶囊**，**作者 / 核验日期直接写成文本**。卡片默认**浅灰外边框**，**已安装的换另一种颜色**并标出「已安装」；
 5. 点名称打开详情弹窗：SKILL.md 正文（Markdown 渲染）、文件清单、总大小、许可证与来源坐标；
 6. 点「安装」，技能被写进本地技能目录，卡片边框即时变色、按钮变成「卸载」，**当前对话的技能列表里马上能调用它**（已安装卡片会写出「调用名」）；
 7. 点「卸载」，技能目录被移到 `.trash`（不直接删除，可手动找回）；
-8. 最下面是更新日期一览（更新日期 · 相对时间 · 条数 · 来源 · 刷新）。
+8. 最下面是更新日期一览（更新日期 · 相对时间 · 条数 · 来源）。
 
 > 不想先装再看？`node scripts/preview.mjs` 会从 `client.js` 抽真实 CSS 生成 `docs/preview.html`，
 > 用浏览器直接打开即可看到与宿主一致的版式（亮/暗跟随系统）。
@@ -60,12 +60,12 @@ npm run preview && open docs/preview.html
 在 DSH 的「插件 → 安装插件 → Git 仓库」里填这个地址（**带版本 tag**）：
 
 ```
-https://github.com/openfcp/dsh-financial-skills#v0.2.0
+https://github.com/openfcp/dsh-financial-skills#v0.2.1
 ```
 
 装完会出现在插件列表里，**彻底重启**（Cmd+Q 后重开）即可看到侧栏「金融技能」。
 
-> ### 为什么要带 `#v0.2.0`，以及「无法从依赖变更中确定安装了哪一个包」是怎么回事
+> ### 为什么要带 `#v0.2.1`，以及「无法从依赖变更中确定安装了哪一个包」是怎么回事
 >
 > git 依赖不带 ref 时，pnpm 会把仓库默认分支的**某个 commit 钉进 lockfile**。再次点安装时，它解析出同一个
 > commit，于是输出 `Already up to date`、`package.json` 没有任何变化；插件管理器靠「依赖前后差了什么」来
@@ -75,7 +75,7 @@ https://github.com/openfcp/dsh-financial-skills#v0.2.0
 >
 > | 你的处境 | 该怎么做 |
 > | --- | --- |
-> | 已经装过旧版，想升级 | 用带新 tag 的地址（`#v0.2.0`）重新安装：spec 变了，pnpm 才会真的动 lockfile |
+> | 已经装过旧版，想升级 | 用带新 tag 的地址（`#v0.2.1`）重新安装：spec 变了，pnpm 才会真的动 lockfile |
 > | 想重装同一版本 | 先在插件列表里**卸载**，再用同一地址安装 |
 > | 想一直跟最新 | 填 `#main`；但上游没新提交时仍会 `Already up to date`，报同一句提示，属正常 |
 >
@@ -142,7 +142,7 @@ git 依赖**不会自动跟随仓库更新**——`pnpm add <同一个地址>` �
 
 ```sh
 # 1. 换成新 tag 的地址（spec 变了，pnpm 才会重新解析、lockfile 才会变）
-dsh plugin --profile desktop add https://github.com/openfcp/dsh-financial-skills#v0.2.0
+dsh plugin --profile desktop add https://github.com/openfcp/dsh-financial-skills#v0.2.1
 # 2. 彻底重启（Cmd+Q 后重开）
 ```
 
@@ -163,12 +163,12 @@ dsh plugin --profile desktop add https://github.com/openfcp/dsh-financial-skills
 | 搜索 | 按 id / 中文名 / 英文名 / 摘要 / 标签 / 作者匹配，大小写不敏感，输入即筛；与分类、已安装筛选叠加。 |
 | 分类筛选 | 一行 9 个官方 `Pill`（含「全部」与每类数量）；空分类仍显示，点开提示「该分类暂无工具」。 |
 | 已安装视图 | 官方 `SegmentedControl` 切换「全部插件 / 已安装 (n)」；已安装卡片换用 success 色外边框并带「已安装」标签。 |
-| 卡片元信息 | 类别 / 版本 / 来源 / 协议 / 作者 / 最近核验日期六项，缺值写「未标注」而不是留空；已安装卡片额外显示 frontmatter 里的**调用名**。 |
+| 卡片元信息 | 类别 / 来源 / 版本 / 协议画成胶囊，作者 / 最近核验日期写成纯文本；缺值一律「未标注」而不是留空；已安装卡片额外显示 frontmatter 里的**调用名**。 |
 | 详情预览 | 官方 `Modal` + `MarkdownText` 渲染 SKILL.md 正文（截断 64KB），附文件清单、总大小、license、版本与来源坐标（卡片只给概要，详情里如实显示全部）。 |
 | 一键安装 | 按 id 和清单坐标取回正文：SkillHub 走 zip 下载解压，GitHub 优先整仓 tarball（失败退 contents API / raw / jsDelivr）；校验后整目录改名落位，失败清理暂存不留痕。装完**立即通知技能注册表**，当前对话就能调用。 |
 | 一键卸载 | 移动到 `<DSH_HOME>/skills/.trash/<id>-<时间戳>/`，不直接删除。 |
 | 离线快照 | 网络不可用或源站降级时回落到随包 `catalog.snapshot.json`；页面页脚**如实标注** `source: network / cache / snapshot` 与是否过期，绝不把快照说成实时。 |
-| 刷新 | 页脚「刷新」按钮请求 `GET /api/financial-skills/catalog?refresh=1`，失败以错误行展示。 |
+| 刷新 | 元信息行「实时/非实时」右侧的红色刷新按钮请求 `GET /api/financial-skills/catalog?refresh=1`，失败以错误行展示。 |
 
 ## 已知边界
 

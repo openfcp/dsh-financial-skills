@@ -56,6 +56,7 @@ html,body{margin:0;padding:0;background:var(--dsw-alias-bg-base);color:var(--dsw
 .pv-tag-info{color:var(--dsw-alias-brand-primary);background:color-mix(in srgb,var(--dsw-alias-brand-primary) 12%,transparent)}
 .pv-tag-warning{color:var(--dsw-alias-state-warn-primary);background:color-mix(in srgb,var(--dsw-alias-state-warn-primary) 14%,transparent)}
 .pv-tag-neutral{color:var(--dsw-alias-label-tertiary);background:var(--dsw-alias-bg-layer-2)}
+.pv-tag-outline{color:var(--dsw-alias-label-secondary);border:.5px solid var(--dsw-alias-border-l2);border-radius:999px;padding:0 8px;line-height:18px;height:20px}
 .pv-btn{display:inline-flex;align-items:center;justify-content:center;gap:4px;border:1px solid transparent;border-radius:8px;cursor:pointer;font:inherit;background:0 0;color:inherit}
 .pv-btn-sm{height:26px;padding:0 9px;font-size:12.5px;line-height:24px}
 .pv-btn-ghost{color:var(--dsw-alias-label-secondary)}
@@ -85,13 +86,26 @@ html,body{margin:0;padding:0;background:var(--dsw-alias-bg-base);color:var(--dsw
 .fs-heroSpacer{flex:1}
 .fs-heroBadge{flex:none;padding:4px 10px;border:.5px solid var(--dsw-alias-border-l2);border-radius:999px;color:var(--dsw-alias-label-secondary);font-size:11.5px;line-height:16px;font-variant-numeric:tabular-nums;white-space:nowrap}
 
-/* 一行元信息：数据源 · 更新 · 核验 · 非实时 · 刷新 */
+/* 一行元信息：数据源 · 更新 · 「实时/非实时」+ 紧贴其右的全页唯一红色刷新按钮 */
 .fs-metaRow{display:flex;flex-wrap:wrap;align-items:center;gap:10px;min-width:0;font-size:12px;line-height:18px;color:var(--dsw-alias-label-tertiary)}
 .fs-metaItem{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
 .fs-metaKey{color:var(--dsw-alias-label-caption)}
 .fs-metaVal{color:var(--dsw-alias-label-secondary);font-variant-numeric:tabular-nums}
 .fs-metaDot{color:var(--dsw-alias-border-l3)}
-.fs-metaSpacer{flex:1}
+
+/* 刷新：浅红底 + 红字 + 红描边的胶囊，落在「实时 / 非实时」右手边，是全页唯一的主行动。
+   用浅色而非实心大红：整页只有这一个彩色元素，已经足够醒目，实心红反而抢掉内容的注意力。 */
+.fs-refresh{display:inline-flex;align-items:center;gap:5px;height:26px;padding:0 11px;
+  border:1px solid color-mix(in srgb,var(--dsw-alias-state-error-primary) 45%,transparent);border-radius:999px;
+  background:color-mix(in srgb,var(--dsw-alias-state-error-primary) 10%,transparent);
+  color:var(--dsw-alias-state-error-primary);
+  font:inherit;font-size:12.5px;font-weight:500;line-height:24px;white-space:nowrap;cursor:pointer;
+  transition:background-color var(--ds-transition-duration,.2s) var(--ds-ease-in-out,ease-in-out),border-color var(--ds-transition-duration,.2s) var(--ds-ease-in-out,ease-in-out)}
+.fs-refresh:hover{background:color-mix(in srgb,var(--dsw-alias-state-error-primary) 18%,transparent);border-color:color-mix(in srgb,var(--dsw-alias-state-error-primary) 68%,transparent)}
+.fs-refresh:active{background:color-mix(in srgb,var(--dsw-alias-state-error-primary) 24%,transparent)}
+.fs-refresh:disabled{cursor:progress;color:color-mix(in srgb,var(--dsw-alias-state-error-primary) 70%,transparent);border-color:color-mix(in srgb,var(--dsw-alias-state-error-primary) 30%,transparent)}
+.fs-refresh:focus-visible{outline:2px solid var(--dsw-alias-state-error-primary);outline-offset:2px}
+.fs-refreshIcon{display:inline-flex;flex:none;align-items:center}
 
 /* 搜索（左）+ 视图切换（右） */
 .fs-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:12px;min-width:0}
@@ -104,26 +118,34 @@ html,body{margin:0;padding:0;background:var(--dsw-alias-bg-base);color:var(--dsw
 .fs-pillCount{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-caption);font-size:12px;line-height:18px}
 .fs-panelBody{display:flex;flex-direction:column;gap:14px;min-width:0}
 
-/* 卡片网格 */
-.fs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px;margin:0;padding:0;list-style:none}
-.fs-card{box-sizing:border-box;display:flex;flex-direction:column;gap:10px;min-width:0;padding:14px 16px 12px;border:1px solid var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-xl);background:var(--dsw-alias-bg-layer-1);transition:border-color var(--ds-transition-duration,.2s) var(--ds-ease-in-out,ease-in-out),background-color var(--ds-transition-duration,.2s) var(--ds-ease-in-out,ease-in-out)}
+/* 技能卡片：一行一条长条卡，自上而下依次排列（不是多列网格） */
+.fs-grid{display:flex;flex-direction:column;gap:10px;margin:0;padding:0;list-style:none}
+.fs-card{box-sizing:border-box;display:flex;align-items:center;gap:16px;min-width:0;padding:12px 14px 12px 16px;border:1px solid var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-xl);background:var(--dsw-alias-bg-layer-1);transition:border-color var(--ds-transition-duration,.2s) var(--ds-ease-in-out,ease-in-out),background-color var(--ds-transition-duration,.2s) var(--ds-ease-in-out,ease-in-out)}
 .fs-card:hover{border-color:var(--dsw-alias-border-l3);background:var(--dsw-alias-bg-layer-2)}
 .fs-card[data-installed="true"]{border-color:var(--dsw-alias-state-success-primary)}
 .fs-card[data-installed="true"]:hover{border-color:var(--dsw-alias-state-success-primary)}
-.fs-cardHead{display:flex;align-items:flex-start;gap:8px;min-width:0}
-.fs-cardTitles{display:flex;flex-direction:column;gap:1px;min-width:0;flex:1}
-.fs-cardName{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border:0;background:0 0;color:inherit;font:inherit;font-size:14.5px;font-weight:600;line-height:21px;text-align:left;cursor:pointer;padding:0}
+.fs-cardMain{display:flex;flex:1;flex-direction:column;gap:5px;min-width:0}
+.fs-cardHead{display:flex;align-items:center;gap:8px;min-width:0}
+.fs-cardName{min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border:0;background:0 0;color:inherit;font:inherit;font-size:14.5px;font-weight:600;line-height:21px;text-align:left;cursor:pointer;padding:0}
 .fs-cardName:hover{text-decoration:underline;text-underline-offset:3px}
-.fs-cardNameEn{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary);font-size:11.5px;line-height:16px}
-.fs-cardSummary{display:-webkit-box;overflow:hidden;-webkit-box-orient:vertical;-webkit-line-clamp:2;margin:0;color:var(--dsw-alias-label-tertiary);font-size:12px;line-height:18px;min-height:36px}
-.fs-cardMeta{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 14px;margin:0;padding-top:8px;border-top:.5px solid var(--dsw-alias-border-l2)}
-.fs-cardMetaPair{display:flex;align-items:baseline;gap:6px;min-width:0;font-size:11.5px;line-height:16px}
-.fs-cardMetaKey{flex:none;color:var(--dsw-alias-label-caption)}
-.fs-cardMetaVal{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-secondary)}
+.fs-cardNameEn{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary);font-size:11.5px;line-height:16px}
+.fs-cardBadge{flex:none;display:inline-flex;align-items:center;margin-left:2px}
+.fs-cardSummary{display:-webkit-box;overflow:hidden;-webkit-box-orient:vertical;-webkit-line-clamp:1;margin:0;color:var(--dsw-alias-label-tertiary);font-size:12px;line-height:18px}
+/* 类别 / 来源 / 版本 / 协议 → 胶囊；作者 / 核验日期 → 纯文本 */
+.fs-cardMeta{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin:0;min-width:0}
+.fs-cardChips{display:inline-flex;flex-wrap:wrap;align-items:center;gap:6px;min-width:0}
+.fs-cardFacts{display:inline-flex;flex-wrap:wrap;align-items:center;gap:4px 12px;min-width:0;font-size:11.5px;line-height:16px;color:var(--dsw-alias-label-tertiary)}
+.fs-cardFact{display:inline-flex;align-items:baseline;gap:4px;min-width:0}
+.fs-cardFactKey{flex:none;color:var(--dsw-alias-label-caption)}
+.fs-cardFactVal{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-secondary)}
 .fs-cardInvoke{display:flex;align-items:center;gap:6px;min-width:0;font-size:11.5px;line-height:16px;color:var(--dsw-alias-state-success-primary)}
 .fs-cardInvokeCode{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--ds-font-family-code,ui-monospace,monospace);font-size:11.5px}
-.fs-cardFoot{display:flex;align-items:center;gap:6px;margin-top:auto;padding-top:2px}
-.fs-cardFootSpacer{flex:1}
+.fs-cardActions{display:flex;flex:none;align-items:center;gap:6px}
+/* 窄容器：长条卡改为上下两段（信息在上、动作在下），不挤成一坨 */
+@media (max-width:720px){
+  .fs-card{flex-direction:column;align-items:stretch;gap:10px}
+  .fs-cardActions{justify-content:flex-end}
+}
 
 /* 状态 / 提示 */
 .fs-state{display:flex;flex-direction:column;align-items:center;gap:12px;padding:40px 16px;text-align:center}
@@ -136,13 +158,12 @@ html,body{margin:0;padding:0;background:var(--dsw-alias-bg-base);color:var(--dsw
 .fs-noticeOk{margin:0;font-size:12px;line-height:18px;color:var(--dsw-alias-state-success-primary);overflow-wrap:anywhere}
 .fs-notices{display:flex;flex-direction:column;gap:8px}
 .fs-skeletons{display:flex;flex-direction:column;gap:12px;width:100%}
-.fs-skeletonGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px}
-.fs-skeletonCard{height:168px;border:.5px solid var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-xl);background:var(--dsw-alias-bg-skeleton)}
+.fs-skeletonGrid{display:flex;flex-direction:column;gap:10px}
+.fs-skeletonCard{height:78px;border:.5px solid var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-xl);background:var(--dsw-alias-bg-skeleton)}
 
-/* 页脚（保持原样：更新日期 · 相对时间 · 条数 · 来源 · 刷新） */
+/* 页脚（只留更新日期一览：更新日期 · 相对时间 · 条数 · 来源） */
 .fs-footer{display:flex;flex-wrap:wrap;align-items:center;gap:12px;width:100%;padding:8px 0 4px;border-top:.5px solid var(--dsw-alias-border-l2)}
 .fs-footerText{margin:0;font-size:12px;line-height:18px;color:var(--dsw-alias-label-tertiary);font-variant-numeric:tabular-nums}
-.fs-footerSpacer{flex:1}
 
 /* 详情弹窗 */
 .fs-detail{width:min(720px,100%);max-height:min(760px,100%)}
@@ -194,11 +215,10 @@ html,body{margin:0;padding:0;background:var(--dsw-alias-bg-base);color:var(--dsw
         <span class="fs-metaItem"><span class="fs-metaKey">数据源</span><span class="fs-metaVal">openfcp/awesome-financial-skills</span></span>
         <span class="fs-metaDot">·</span>
         <span class="fs-metaItem"><span class="fs-metaVal">更新 2026-11-18</span></span>
-        <span class="fs-metaDot">·</span>
-        <span class="fs-metaItem"><span class="fs-metaVal">核验 2026-11-18</span></span>
         <span class="pv-tag pv-tag-info">实时</span>
-        <span class="fs-metaSpacer"></span>
-        <span class="fs-metaItem"><button type="button" class="pv-btn pv-btn-ghost pv-btn-sm">刷新</button></span>
+        <button type="button" class="fs-refresh">
+          <span class="fs-refreshIcon"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" aria-hidden="true"><path d="M13 8a5 5 0 1 1-1.6-3.7"></path><path d="M12.4 1.9v2.6h-2.6"></path></svg></span>刷新
+        </button>
       </div>
 
       <div class="fs-toolbar" data-dsh-part="toolbar">
@@ -226,289 +246,325 @@ html,body{margin:0;padding:0;background:var(--dsw-alias-bg-base);color:var(--dsw
         </div>
         <ul class="fs-grid" data-dsh-part="skill-grid">
       <li class="fs-card" data-installed="true">
-        <div class="fs-cardHead">
-          <div class="fs-cardTitles">
+        <div class="fs-cardMain">
+          <div class="fs-cardHead">
             <button type="button" class="fs-cardName">消保审查</button>
             <span class="fs-cardNameEn">Consumer Protection Review</span>
+            <span class="fs-cardBadge"><span class="pv-tag pv-tag-success">已安装</span></span>
           </div>
-          <span class="pv-tag pv-tag-success">已安装</span>
+          <p class="fs-cardSummary" title="营销材料、协议条款、定价方案、销售话术的合规审查：六维审查模型、八项权益映射、风险定级与法规依据库。">营销材料、协议条款、定价方案、销售话术的合规审查：六维审查模型、八项权益映射、风险定级与法规依据库。</p>
+          <div class="fs-cardMeta">
+            <span class="fs-cardChips">
+              <span class="pv-tag pv-tag-outline">消费者保护</span>
+              <span class="pv-tag pv-tag-outline">SkillHub</span>
+              <span class="pv-tag pv-tag-outline">1.0.0</span>
+              <span class="pv-tag pv-tag-outline">专有</span>
+            </span>
+            <span class="fs-cardFacts">
+              <span class="fs-cardFact"><span class="fs-cardFactKey">作者</span><span class="fs-cardFactVal" title="八大权益">八大权益</span></span>
+              <span class="fs-cardFact"><span class="fs-cardFactKey">核验日期</span><span class="fs-cardFactVal" title="2026-11-18">2026-11-18</span></span>
+            </span>
+          </div>
+          <p class="fs-cardInvoke"><span>调用名</span><code class="fs-cardInvokeCode">consumer-protection-re</code></p>
         </div>
-        <p class="fs-cardSummary" title="营销材料、协议条款、定价方案、销售话术的合规审查：六维审查模型、八项权益映射、风险定级与法规依据库。">营销材料、协议条款、定价方案、销售话术的合规审查：六维审查模型、八项权益映射、风险定级与法规依据库。</p>
-        <dl class="fs-cardMeta">
-          <div class="fs-cardMetaPair"><dt class="fs-cardMetaKey">类别</dt><dd class="fs-cardMetaVal" title="消费者保护">消费者保护</dd></div>
-          <div class="fs-cardMetaPair"><dt class="fs-cardMetaKey">版本</dt><dd class="fs-cardMetaVal" title="1.0.0">1.0.0</dd></div>
-          <div class="fs-cardMetaPair"><dt class="fs-cardMetaKey">来源</dt><dd class="fs-cardMetaVal" title="SkillHub">SkillHub</dd></div>
-          <div class="fs-cardMetaPair"><dt class="fs-cardMetaKey">协议</dt><dd class="fs-cardMetaVal" title="专有">专有</dd></div>
-          <div class="fs-cardMetaPair"><dt class="fs-cardMetaKey">作者</dt><dd class="fs-cardMetaVal" title="八大权益">八大权益</dd></div>
-          <div class="fs-cardMetaPair"><dt class="fs-cardMetaKey">核验日期</dt><dd class="fs-cardMetaVal" title="2026-11-18">2026-11-18</dd></div>
-        </dl>
-        <p class="fs-cardInvoke"><span>调用名</span><code class="fs-cardInvokeCode">consumer-protection-re</code></p>
-        <div class="fs-cardFoot">
-          <span class="fs-cardFootSpacer"></span>
+        <div class="fs-cardActions">
           <button type="button" class="pv-btn pv-btn-ghost pv-btn-sm">详情</button>
           <button type="button" class="pv-btn pv-btn-ghost pv-btn-sm">卸载</button>
         </div>
       </li>
       <li class="fs-card" data-installed="true">
-        <div class="fs-cardHead">
-          <div class="fs-cardTitles">
+        <div class="fs-cardMain">
+          <div class="fs-cardHead">
             <button type="button" class="fs-cardName">消保评价</button>
             <span class="fs-cardNameEn">Consumer Protection Evaluation</span>
+            <span class="fs-cardBadge"><span class="pv-tag pv-tag-success">已安装</span></span>
           </div>
-          <span class="pv-tag pv-tag-success">已安装</span>
+          <p class="fs-cardSummary" title="年度消保监管评价自评全流程：指标解读、台账分工、证据链整理、自评报告撰写、失分诊断与模拟打分。">年度消保监管评价自评全流程：指标解读、台账分工、证据链整理、自评报告撰写、失分诊断与模拟打分。</p>
+          <div class="fs-cardMeta">
+            <span class="fs-cardChips">
+              <span class="pv-tag pv-tag-outline">消费者保护</span>
+              <span class="pv-tag pv-tag-outline">SkillHub</span>
+              <span class="pv-tag pv-tag-outline">1.0.0</span>
+              <span class="pv-tag pv-tag-outline">专有</span>
+            </span>
+            <span class="fs-cardFacts">
+              <span class="fs-cardFact"><span class="fs-cardFactKey">作者</span><span class="fs-cardFactVal" title="八大权益">八大权益</span></span>
+              <span class="fs-cardFact"><span class="fs-cardFactKey">核验日期</span><span class="fs-cardFactVal" title="2026-11-18">2026-11-18</span></span>
+            </span>
+          </div>
+          <p class="fs-cardInvoke"><span>调用名</span><code class="fs-cardInvokeCode">consumer-protection-an</code></p>
         </div>
-        <p class="fs-cardSummary" title="年度消保监管评价自评全流程：指标解读、台账分工、证据链整理、自评报告撰写、失分诊断与模拟打分。">年度消保监管评价自评全流程：指标解读、台账分工、证据链整理、自评报告撰写、失分诊断与模拟打分。</p>
-        <dl class="fs-cardMeta">
-          <div class="fs-cardMetaPair"><dt class="fs-cardMetaKey">类别</dt><dd class="fs-cardMetaVal" title="消费者保护">消费者保护</dd></div>
-          <div class="fs-cardMetaPair"><dt class="fs-cardMetaKey">版本</dt><dd class="fs-cardMetaVal" title="1.0.0">1.0.0</dd></div>
-          <div class="fs-cardMetaPair"><dt class="fs-cardMetaKey">来源</dt><dd class="fs-cardMetaVal" title="SkillHub">SkillHub</dd></div>
-          <div class="fs-cardMetaPair"><dt class="fs-cardMetaKey">协议</dt><dd class="fs-cardMetaVal" title="专有">专有</dd></div>
-          <div class="fs-cardMetaPair"><dt class="fs-cardMetaKey">作者</dt><dd class="fs-cardMetaVal" title="八大权益">八大权益</dd></div>
-          <div class="fs-cardMetaPair"><dt class="fs-cardMetaKey">核验日期</dt><dd class="fs-cardMetaVal" title="2026-11-18">2026-11-18</dd></div>
-        </dl>
-        <p class="fs-cardInvoke"><span>调用名</span><code class="fs-cardInvokeCode">consumer-protection-an</code></p>
-        <div class="fs-cardFoot">
-          <span class="fs-cardFootSpacer"></span>
+        <div class="fs-cardActions">
           <button type="button" class="pv-btn pv-btn-ghost pv-btn-sm">详情</button>
           <button type="button" class="pv-btn pv-btn-ghost pv-btn-sm">卸载</button>
         </div>
       </li>
       <li class="fs-card" data-installed="false">
-        <div class="fs-cardHead">
-          <div class="fs-cardTitles">
+        <div class="fs-cardMain">
+          <div class="fs-cardHead">
             <button type="button" class="fs-cardName">合规销售</button>
             <span class="fs-cardNameEn">Compliance Sales</span>
+            
+          </div>
+          <p class="fs-cardSummary" title="营销宣传八不得审查、禁用词扫描、双录规范、适当性匹配（P1-P5/R1-R5）与渠道合作机构管理。">营销宣传八不得审查、禁用词扫描、双录规范、适当性匹配（P1-P5/R1-R5）与渠道合作机构管理。</p>
+          <div class="fs-cardMeta">
+            <span class="fs-cardChips">
+              <span class="pv-tag pv-tag-outline">消费者保护</span>
+              <span class="pv-tag pv-tag-outline">SkillHub</span>
+              <span class="pv-tag pv-tag-outline">1.0.0</span>
+              <span class="pv-tag pv-tag-outline">专有</span>
+            </span>
+            <span class="fs-cardFacts">
+              <span class="fs-cardFact"><span class="fs-cardFactKey">作者</span><span class="fs-cardFactVal" title="八大权益">八大权益</span></span>
+              <span class="fs-cardFact"><span class="fs-cardFactKey">核验日期</span><span class="fs-cardFactVal" title="2026-11-18">2026-11-18</span></span>
+            </span>
           </div>
           
         </div>
-        <p class="fs-cardSummary" title="营销宣传八不得审查、禁用词扫描、双录规范、适当性匹配（P1-P5/R1-R5）与渠道合作机构管理。">营销宣传八不得审查、禁用词扫描、双录规范、适当性匹配（P1-P5/R1-R5）与渠道合作机构管理。</p>
-        <dl class="fs-cardMeta">
-          <div class="fs-cardMetaPair"><dt class="fs-cardMetaKey">类别</dt><dd class="fs-cardMetaVal" title="消费者保护">消费者保护</dd></div>
-          <div class="fs-cardMetaPair"><dt class="fs-cardMetaKey">版本</dt><dd class="fs-cardMetaVal" title="1.0.0">1.0.0</dd></div>
-          <div class="fs-cardMetaPair"><dt class="fs-cardMetaKey">来源</dt><dd class="fs-cardMetaVal" title="SkillHub">SkillHub</dd></div>
-          <div class="fs-cardMetaPair"><dt class="fs-cardMetaKey">协议</dt><dd class="fs-cardMetaVal" title="专有">专有</dd></div>
-          <div class="fs-cardMetaPair"><dt class="fs-cardMetaKey">作者</dt><dd class="fs-cardMetaVal" title="八大权益">八大权益</dd></div>
-          <div class="fs-cardMetaPair"><dt class="fs-cardMetaKey">核验日期</dt><dd class="fs-cardMetaVal" title="2026-11-18">2026-11-18</dd></div>
-        </dl>
-        
-        <div class="fs-cardFoot">
-          <span class="fs-cardFootSpacer"></span>
+        <div class="fs-cardActions">
           <button type="button" class="pv-btn pv-btn-ghost pv-btn-sm">详情</button>
           <button type="button" class="pv-btn pv-btn-primary pv-btn-sm">安装</button>
         </div>
       </li>
       <li class="fs-card" data-installed="false">
-        <div class="fs-cardHead">
-          <div class="fs-cardTitles">
+        <div class="fs-cardMain">
+          <div class="fs-cardHead">
             <button type="button" class="fs-cardName">投诉管理</button>
             <span class="fs-cardNameEn">Complaint Management</span>
+            
+          </div>
+          <p class="fs-cardSummary" title="投诉数据统计分析、分类打标（JR/T 0169-2018）、复杂投诉谈判支持、和解协议起草、溯源整改与月报生成。">投诉数据统计分析、分类打标（JR/T 0169-2018）、复杂投诉谈判支持、和解协议起草、溯源整改与月报生成。</p>
+          <div class="fs-cardMeta">
+            <span class="fs-cardChips">
+              <span class="pv-tag pv-tag-outline">消费者保护</span>
+              <span class="pv-tag pv-tag-outline">SkillHub</span>
+              <span class="pv-tag pv-tag-outline">1.0.0</span>
+              <span class="pv-tag pv-tag-outline">专有</span>
+            </span>
+            <span class="fs-cardFacts">
+              <span class="fs-cardFact"><span class="fs-cardFactKey">作者</span><span class="fs-cardFactVal" title="八大权益">八大权益</span></span>
+              <span class="fs-cardFact"><span class="fs-cardFactKey">核验日期</span><span class="fs-cardFactVal" title="2026-11-18">2026-11-18</span></span>
+            </span>
           </div>
           
         </div>
-        <p class="fs-cardSummary" title="投诉数据统计分析、分类打标（JR/T 0169-2018）、复杂投诉谈判支持、和解协议起草、溯源整改与月报生成。">投诉数据统计分析、分类打标（JR/T 0169-2018）、复杂投诉谈判支持、和解协议起草、溯源整改与月报生成。</p>
-        <dl class="fs-cardMeta">
-          <div class="fs-cardMetaPair"><dt class="fs-cardMetaKey">类别</dt><dd class="fs-cardMetaVal" title="消费者保护">消费者保护</dd></div>
-          <div class="fs-cardMetaPair"><dt class="fs-cardMetaKey">版本</dt><dd class="fs-cardMetaVal" title="1.0.0">1.0.0</dd></div>
-          <div class="fs-cardMetaPair"><dt class="fs-cardMetaKey">来源</dt><dd class="fs-cardMetaVal" title="SkillHub">SkillHub</dd></div>
-          <div class="fs-cardMetaPair"><dt class="fs-cardMetaKey">协议</dt><dd class="fs-cardMetaVal" title="专有">专有</dd></div>
-          <div class="fs-cardMetaPair"><dt class="fs-cardMetaKey">作者</dt><dd class="fs-cardMetaVal" title="八大权益">八大权益</dd></div>
-          <div class="fs-cardMetaPair"><dt class="fs-cardMetaKey">核验日期</dt><dd class="fs-cardMetaVal" title="2026-11-18">2026-11-18</dd></div>
-        </dl>
-        
-        <div class="fs-cardFoot">
-          <span class="fs-cardFootSpacer"></span>
+        <div class="fs-cardActions">
           <button type="button" class="pv-btn pv-btn-ghost pv-btn-sm">详情</button>
           <button type="button" class="pv-btn pv-btn-primary pv-btn-sm">安装</button>
         </div>
       </li>
       <li class="fs-card" data-installed="false">
-        <div class="fs-cardHead">
-          <div class="fs-cardTitles">
+        <div class="fs-cardMain">
+          <div class="fs-cardHead">
             <button type="button" class="fs-cardName">消保检查</button>
             <span class="fs-cardNameEn">Consumer Protection Inspection</span>
+            
+          </div>
+          <p class="fs-cardSummary" title="检查制度与年度计划、六大领域检查执行、检查方案与记录表生成、整改跟踪台账与覆盖率统计。">检查制度与年度计划、六大领域检查执行、检查方案与记录表生成、整改跟踪台账与覆盖率统计。</p>
+          <div class="fs-cardMeta">
+            <span class="fs-cardChips">
+              <span class="pv-tag pv-tag-outline">消费者保护</span>
+              <span class="pv-tag pv-tag-outline">SkillHub</span>
+              <span class="pv-tag pv-tag-outline">1.0.0</span>
+              <span class="pv-tag pv-tag-outline">专有</span>
+            </span>
+            <span class="fs-cardFacts">
+              <span class="fs-cardFact"><span class="fs-cardFactKey">作者</span><span class="fs-cardFactVal" title="八大权益">八大权益</span></span>
+              <span class="fs-cardFact"><span class="fs-cardFactKey">核验日期</span><span class="fs-cardFactVal" title="2026-11-18">2026-11-18</span></span>
+            </span>
           </div>
           
         </div>
-        <p class="fs-cardSummary" title="检查制度与年度计划、六大领域检查执行、检查方案与记录表生成、整改跟踪台账与覆盖率统计。">检查制度与年度计划、六大领域检查执行、检查方案与记录表生成、整改跟踪台账与覆盖率统计。</p>
-        <dl class="fs-cardMeta">
-          <div class="fs-cardMetaPair"><dt class="fs-cardMetaKey">类别</dt><dd class="fs-cardMetaVal" title="消费者保护">消费者保护</dd></div>
-          <div class="fs-cardMetaPair"><dt class="fs-cardMetaKey">版本</dt><dd class="fs-cardMetaVal" title="1.0.0">1.0.0</dd></div>
-          <div class="fs-cardMetaPair"><dt class="fs-cardMetaKey">来源</dt><dd class="fs-cardMetaVal" title="SkillHub">SkillHub</dd></div>
-          <div class="fs-cardMetaPair"><dt class="fs-cardMetaKey">协议</dt><dd class="fs-cardMetaVal" title="专有">专有</dd></div>
-          <div class="fs-cardMetaPair"><dt class="fs-cardMetaKey">作者</dt><dd class="fs-cardMetaVal" title="八大权益">八大权益</dd></div>
-          <div class="fs-cardMetaPair"><dt class="fs-cardMetaKey">核验日期</dt><dd class="fs-cardMetaVal" title="2026-11-18">2026-11-18</dd></div>
-        </dl>
-        
-        <div class="fs-cardFoot">
-          <span class="fs-cardFootSpacer"></span>
+        <div class="fs-cardActions">
           <button type="button" class="pv-btn pv-btn-ghost pv-btn-sm">详情</button>
           <button type="button" class="pv-btn pv-btn-primary pv-btn-sm">安装</button>
         </div>
       </li>
       <li class="fs-card" data-installed="false">
-        <div class="fs-cardHead">
-          <div class="fs-cardTitles">
+        <div class="fs-cardMain">
+          <div class="fs-cardHead">
             <button type="button" class="fs-cardName">PPT Master · 智能生成</button>
             <span class="fs-cardNameEn">PPT Master</span>
+            
+          </div>
+          <p class="fs-cardSummary" title="五阶段交互工作流生成可直接编辑的 .pptx：20 种图表类型、8 大温和色系，从大纲到成片一次交付。">五阶段交互工作流生成可直接编辑的 .pptx：20 种图表类型、8 大温和色系，从大纲到成片一次交付。</p>
+          <div class="fs-cardMeta">
+            <span class="fs-cardChips">
+              <span class="pv-tag pv-tag-outline">办公与设计</span>
+              <span class="pv-tag pv-tag-outline">SkillHub</span>
+              <span class="pv-tag pv-tag-outline">3.0.0</span>
+              <span class="pv-tag pv-tag-outline">专有</span>
+            </span>
+            <span class="fs-cardFacts">
+              <span class="fs-cardFact"><span class="fs-cardFactKey">作者</span><span class="fs-cardFactVal" title="ppt-master">ppt-master</span></span>
+              <span class="fs-cardFact"><span class="fs-cardFactKey">核验日期</span><span class="fs-cardFactVal" title="2026-11-18">2026-11-18</span></span>
+            </span>
           </div>
           
         </div>
-        <p class="fs-cardSummary" title="五阶段交互工作流生成可直接编辑的 .pptx：20 种图表类型、8 大温和色系，从大纲到成片一次交付。">五阶段交互工作流生成可直接编辑的 .pptx：20 种图表类型、8 大温和色系，从大纲到成片一次交付。</p>
-        <dl class="fs-cardMeta">
-          <div class="fs-cardMetaPair"><dt class="fs-cardMetaKey">类别</dt><dd class="fs-cardMetaVal" title="办公与设计">办公与设计</dd></div>
-          <div class="fs-cardMetaPair"><dt class="fs-cardMetaKey">版本</dt><dd class="fs-cardMetaVal" title="3.0.0">3.0.0</dd></div>
-          <div class="fs-cardMetaPair"><dt class="fs-cardMetaKey">来源</dt><dd class="fs-cardMetaVal" title="SkillHub">SkillHub</dd></div>
-          <div class="fs-cardMetaPair"><dt class="fs-cardMetaKey">协议</dt><dd class="fs-cardMetaVal" title="专有">专有</dd></div>
-          <div class="fs-cardMetaPair"><dt class="fs-cardMetaKey">作者</dt><dd class="fs-cardMetaVal" title="ppt-master">ppt-master</dd></div>
-          <div class="fs-cardMetaPair"><dt class="fs-cardMetaKey">核验日期</dt><dd class="fs-cardMetaVal" title="2026-11-18">2026-11-18</dd></div>
-        </dl>
-        
-        <div class="fs-cardFoot">
-          <span class="fs-cardFootSpacer"></span>
+        <div class="fs-cardActions">
           <button type="button" class="pv-btn pv-btn-ghost pv-btn-sm">详情</button>
           <button type="button" class="pv-btn pv-btn-primary pv-btn-sm">安装</button>
         </div>
       </li>
       <li class="fs-card" data-installed="false">
-        <div class="fs-cardHead">
-          <div class="fs-cardTitles">
+        <div class="fs-cardMain">
+          <div class="fs-cardHead">
             <button type="button" class="fs-cardName">公文排版 Pro</button>
             <span class="fs-cardNameEn">Official Document Typesetting Pro</span>
+            
+          </div>
+          <p class="fs-cardSummary" title="按 GB/T 9704-2012 把 Markdown/TXT/DOCX 转成国标格式 Word：红头、发文字号、版记、字体字号与页边距一次到位。">按 GB/T 9704-2012 把 Markdown/TXT/DOCX 转成国标格式 Word：红头、发文字号、版记、字体字号与页边距一次到位。</p>
+          <div class="fs-cardMeta">
+            <span class="fs-cardChips">
+              <span class="pv-tag pv-tag-outline">办公与设计</span>
+              <span class="pv-tag pv-tag-outline">SkillHub</span>
+              <span class="pv-tag pv-tag-outline">1.0.0</span>
+              <span class="pv-tag pv-tag-outline">专有</span>
+            </span>
+            <span class="fs-cardFacts">
+              <span class="fs-cardFact"><span class="fs-cardFactKey">作者</span><span class="fs-cardFactVal" title="user_2ecc1bb2">user_2ecc1bb2</span></span>
+              <span class="fs-cardFact"><span class="fs-cardFactKey">核验日期</span><span class="fs-cardFactVal" title="2026-11-18">2026-11-18</span></span>
+            </span>
           </div>
           
         </div>
-        <p class="fs-cardSummary" title="按 GB/T 9704-2012 把 Markdown/TXT/DOCX 转成国标格式 Word：红头、发文字号、版记、字体字号与页边距一次到位。">按 GB/T 9704-2012 把 Markdown/TXT/DOCX 转成国标格式 Word：红头、发文字号、版记、字体字号与页边距一次到位。</p>
-        <dl class="fs-cardMeta">
-          <div class="fs-cardMetaPair"><dt class="fs-cardMetaKey">类别</dt><dd class="fs-cardMetaVal" title="办公与设计">办公与设计</dd></div>
-          <div class="fs-cardMetaPair"><dt class="fs-cardMetaKey">版本</dt><dd class="fs-cardMetaVal" title="1.0.0">1.0.0</dd></div>
-          <div class="fs-cardMetaPair"><dt class="fs-cardMetaKey">来源</dt><dd class="fs-cardMetaVal" title="SkillHub">SkillHub</dd></div>
-          <div class="fs-cardMetaPair"><dt class="fs-cardMetaKey">协议</dt><dd class="fs-cardMetaVal" title="专有">专有</dd></div>
-          <div class="fs-cardMetaPair"><dt class="fs-cardMetaKey">作者</dt><dd class="fs-cardMetaVal" title="user_2ecc1bb2">user_2ecc1bb2</dd></div>
-          <div class="fs-cardMetaPair"><dt class="fs-cardMetaKey">核验日期</dt><dd class="fs-cardMetaVal" title="2026-11-18">2026-11-18</dd></div>
-        </dl>
-        
-        <div class="fs-cardFoot">
-          <span class="fs-cardFootSpacer"></span>
+        <div class="fs-cardActions">
           <button type="button" class="pv-btn pv-btn-ghost pv-btn-sm">详情</button>
           <button type="button" class="pv-btn pv-btn-primary pv-btn-sm">安装</button>
         </div>
       </li>
       <li class="fs-card" data-installed="false">
-        <div class="fs-cardHead">
-          <div class="fs-cardTitles">
+        <div class="fs-cardMain">
+          <div class="fs-cardHead">
             <button type="button" class="fs-cardName">PPT 原位编辑（win32com）</button>
             <span class="fs-cardNameEn">PPT In-place Editor (win32com)</span>
+            
+          </div>
+          <p class="fs-cardSummary" title="通过 PowerPoint COM 接口就地修改已有 .pptx，布局、图片、形状、渐变与特效全部保留；只改不重建。仅支持 Windows。">通过 PowerPoint COM 接口就地修改已有 .pptx，布局、图片、形状、渐变与特效全部保留；只改不重建。仅支持 Windows。</p>
+          <div class="fs-cardMeta">
+            <span class="fs-cardChips">
+              <span class="pv-tag pv-tag-outline">办公与设计</span>
+              <span class="pv-tag pv-tag-outline">SkillHub</span>
+              <span class="pv-tag pv-tag-outline">1.0.0</span>
+              <span class="pv-tag pv-tag-outline">专有</span>
+            </span>
+            <span class="fs-cardFacts">
+              <span class="fs-cardFact"><span class="fs-cardFactKey">作者</span><span class="fs-cardFactVal" title="user_bd21c5dc">user_bd21c5dc</span></span>
+              <span class="fs-cardFact"><span class="fs-cardFactKey">核验日期</span><span class="fs-cardFactVal" title="2026-11-18">2026-11-18</span></span>
+            </span>
           </div>
           
         </div>
-        <p class="fs-cardSummary" title="通过 PowerPoint COM 接口就地修改已有 .pptx，布局、图片、形状、渐变与特效全部保留；只改不重建。仅支持 Windows。">通过 PowerPoint COM 接口就地修改已有 .pptx，布局、图片、形状、渐变与特效全部保留；只改不重建。仅支持 Windows。</p>
-        <dl class="fs-cardMeta">
-          <div class="fs-cardMetaPair"><dt class="fs-cardMetaKey">类别</dt><dd class="fs-cardMetaVal" title="办公与设计">办公与设计</dd></div>
-          <div class="fs-cardMetaPair"><dt class="fs-cardMetaKey">版本</dt><dd class="fs-cardMetaVal" title="1.0.0">1.0.0</dd></div>
-          <div class="fs-cardMetaPair"><dt class="fs-cardMetaKey">来源</dt><dd class="fs-cardMetaVal" title="SkillHub">SkillHub</dd></div>
-          <div class="fs-cardMetaPair"><dt class="fs-cardMetaKey">协议</dt><dd class="fs-cardMetaVal" title="专有">专有</dd></div>
-          <div class="fs-cardMetaPair"><dt class="fs-cardMetaKey">作者</dt><dd class="fs-cardMetaVal" title="user_bd21c5dc">user_bd21c5dc</dd></div>
-          <div class="fs-cardMetaPair"><dt class="fs-cardMetaKey">核验日期</dt><dd class="fs-cardMetaVal" title="2026-11-18">2026-11-18</dd></div>
-        </dl>
-        
-        <div class="fs-cardFoot">
-          <span class="fs-cardFootSpacer"></span>
+        <div class="fs-cardActions">
           <button type="button" class="pv-btn pv-btn-ghost pv-btn-sm">详情</button>
           <button type="button" class="pv-btn pv-btn-primary pv-btn-sm">安装</button>
         </div>
       </li>
       <li class="fs-card" data-installed="false">
-        <div class="fs-cardHead">
-          <div class="fs-cardTitles">
+        <div class="fs-cardMain">
+          <div class="fs-cardHead">
             <button type="button" class="fs-cardName">公文写作</button>
             <span class="fs-cardNameEn">Chinese Official Document Writing</span>
+            
+          </div>
+          <p class="fs-cardSummary" title="起草、改写、润色与校核中文公文与政务应用文：文种选择、格式规范、克制语体、事实密度与降 AI 味。">起草、改写、润色与校核中文公文与政务应用文：文种选择、格式规范、克制语体、事实密度与降 AI 味。</p>
+          <div class="fs-cardMeta">
+            <span class="fs-cardChips">
+              <span class="pv-tag pv-tag-outline">办公与设计</span>
+              <span class="pv-tag pv-tag-outline">SkillHub</span>
+              <span class="pv-tag pv-tag-outline">1.4.0</span>
+              <span class="pv-tag pv-tag-outline">专有</span>
+            </span>
+            <span class="fs-cardFacts">
+              <span class="fs-cardFact"><span class="fs-cardFactKey">作者</span><span class="fs-cardFactVal" title="user_a601cd18">user_a601cd18</span></span>
+              <span class="fs-cardFact"><span class="fs-cardFactKey">核验日期</span><span class="fs-cardFactVal" title="2026-11-18">2026-11-18</span></span>
+            </span>
           </div>
           
         </div>
-        <p class="fs-cardSummary" title="起草、改写、润色与校核中文公文与政务应用文：文种选择、格式规范、克制语体、事实密度与降 AI 味。">起草、改写、润色与校核中文公文与政务应用文：文种选择、格式规范、克制语体、事实密度与降 AI 味。</p>
-        <dl class="fs-cardMeta">
-          <div class="fs-cardMetaPair"><dt class="fs-cardMetaKey">类别</dt><dd class="fs-cardMetaVal" title="办公与设计">办公与设计</dd></div>
-          <div class="fs-cardMetaPair"><dt class="fs-cardMetaKey">版本</dt><dd class="fs-cardMetaVal" title="1.4.0">1.4.0</dd></div>
-          <div class="fs-cardMetaPair"><dt class="fs-cardMetaKey">来源</dt><dd class="fs-cardMetaVal" title="SkillHub">SkillHub</dd></div>
-          <div class="fs-cardMetaPair"><dt class="fs-cardMetaKey">协议</dt><dd class="fs-cardMetaVal" title="专有">专有</dd></div>
-          <div class="fs-cardMetaPair"><dt class="fs-cardMetaKey">作者</dt><dd class="fs-cardMetaVal" title="user_a601cd18">user_a601cd18</dd></div>
-          <div class="fs-cardMetaPair"><dt class="fs-cardMetaKey">核验日期</dt><dd class="fs-cardMetaVal" title="2026-11-18">2026-11-18</dd></div>
-        </dl>
-        
-        <div class="fs-cardFoot">
-          <span class="fs-cardFootSpacer"></span>
+        <div class="fs-cardActions">
           <button type="button" class="pv-btn pv-btn-ghost pv-btn-sm">详情</button>
           <button type="button" class="pv-btn pv-btn-primary pv-btn-sm">安装</button>
         </div>
       </li>
       <li class="fs-card" data-installed="false">
-        <div class="fs-cardHead">
-          <div class="fs-cardTitles">
+        <div class="fs-cardMain">
+          <div class="fs-cardHead">
             <button type="button" class="fs-cardName">小说剧本分镜流水线</button>
             <span class="fs-cardNameEn">Novel → Script → Storyboard Pipeline</span>
+            
+          </div>
+          <p class="fs-cardSummary" title="从小说到剧本再到分镜的完整链路：素材挖点、三幕结构、场景剧本、分镜表、角色人设卡与 AI 绘图/视频提示词。">从小说到剧本再到分镜的完整链路：素材挖点、三幕结构、场景剧本、分镜表、角色人设卡与 AI 绘图/视频提示词。</p>
+          <div class="fs-cardMeta">
+            <span class="fs-cardChips">
+              <span class="pv-tag pv-tag-outline">办公与设计</span>
+              <span class="pv-tag pv-tag-outline">SkillHub</span>
+              <span class="pv-tag pv-tag-outline">1.0.0</span>
+              <span class="pv-tag pv-tag-outline">专有</span>
+            </span>
+            <span class="fs-cardFacts">
+              <span class="fs-cardFact"><span class="fs-cardFactKey">作者</span><span class="fs-cardFactVal" title="davtime">davtime</span></span>
+              <span class="fs-cardFact"><span class="fs-cardFactKey">核验日期</span><span class="fs-cardFactVal" title="2026-11-18">2026-11-18</span></span>
+            </span>
           </div>
           
         </div>
-        <p class="fs-cardSummary" title="从小说到剧本再到分镜的完整链路：素材挖点、三幕结构、场景剧本、分镜表、角色人设卡与 AI 绘图/视频提示词。">从小说到剧本再到分镜的完整链路：素材挖点、三幕结构、场景剧本、分镜表、角色人设卡与 AI 绘图/视频提示词。</p>
-        <dl class="fs-cardMeta">
-          <div class="fs-cardMetaPair"><dt class="fs-cardMetaKey">类别</dt><dd class="fs-cardMetaVal" title="办公与设计">办公与设计</dd></div>
-          <div class="fs-cardMetaPair"><dt class="fs-cardMetaKey">版本</dt><dd class="fs-cardMetaVal" title="1.0.0">1.0.0</dd></div>
-          <div class="fs-cardMetaPair"><dt class="fs-cardMetaKey">来源</dt><dd class="fs-cardMetaVal" title="SkillHub">SkillHub</dd></div>
-          <div class="fs-cardMetaPair"><dt class="fs-cardMetaKey">协议</dt><dd class="fs-cardMetaVal" title="专有">专有</dd></div>
-          <div class="fs-cardMetaPair"><dt class="fs-cardMetaKey">作者</dt><dd class="fs-cardMetaVal" title="davtime">davtime</dd></div>
-          <div class="fs-cardMetaPair"><dt class="fs-cardMetaKey">核验日期</dt><dd class="fs-cardMetaVal" title="2026-11-18">2026-11-18</dd></div>
-        </dl>
-        
-        <div class="fs-cardFoot">
-          <span class="fs-cardFootSpacer"></span>
+        <div class="fs-cardActions">
           <button type="button" class="pv-btn pv-btn-ghost pv-btn-sm">详情</button>
           <button type="button" class="pv-btn pv-btn-primary pv-btn-sm">安装</button>
         </div>
       </li>
       <li class="fs-card" data-installed="false">
-        <div class="fs-cardHead">
-          <div class="fs-cardTitles">
+        <div class="fs-cardMain">
+          <div class="fs-cardHead">
             <button type="button" class="fs-cardName">全球智能投研</button>
             <span class="fs-cardNameEn">Global Stock Researcher</span>
+            
+          </div>
+          <p class="fs-cardSummary" title="A股/港股/美股/基金/ETF/期货/黄金/债券全资产量化分析与概率预测：多源自动降级、分位数与方向概率、可追溯证据链，支持导出 Word/PPT/PDF。">A股/港股/美股/基金/ETF/期货/黄金/债券全资产量化分析与概率预测：多源自动降级、分位数与方向概率、可追溯证据链，支持导出 Word/PPT/PDF。</p>
+          <div class="fs-cardMeta">
+            <span class="fs-cardChips">
+              <span class="pv-tag pv-tag-outline">数据与技术</span>
+              <span class="pv-tag pv-tag-outline">SkillHub</span>
+              <span class="pv-tag pv-tag-outline">14.0.0</span>
+              <span class="pv-tag pv-tag-outline">MIT</span>
+            </span>
+            <span class="fs-cardFacts">
+              <span class="fs-cardFact"><span class="fs-cardFactKey">作者</span><span class="fs-cardFactVal" title="skill-of-me">skill-of-me</span></span>
+              <span class="fs-cardFact"><span class="fs-cardFactKey">核验日期</span><span class="fs-cardFactVal" title="2026-11-18">2026-11-18</span></span>
+            </span>
           </div>
           
         </div>
-        <p class="fs-cardSummary" title="A股/港股/美股/基金/ETF/期货/黄金/债券全资产量化分析与概率预测：多源自动降级、分位数与方向概率、可追溯证据链，支持导出 Word/PPT/PDF。">A股/港股/美股/基金/ETF/期货/黄金/债券全资产量化分析与概率预测：多源自动降级、分位数与方向概率、可追溯证据链，支持导出 Word/PPT/PDF。</p>
-        <dl class="fs-cardMeta">
-          <div class="fs-cardMetaPair"><dt class="fs-cardMetaKey">类别</dt><dd class="fs-cardMetaVal" title="数据与技术">数据与技术</dd></div>
-          <div class="fs-cardMetaPair"><dt class="fs-cardMetaKey">版本</dt><dd class="fs-cardMetaVal" title="14.0.0">14.0.0</dd></div>
-          <div class="fs-cardMetaPair"><dt class="fs-cardMetaKey">来源</dt><dd class="fs-cardMetaVal" title="SkillHub">SkillHub</dd></div>
-          <div class="fs-cardMetaPair"><dt class="fs-cardMetaKey">协议</dt><dd class="fs-cardMetaVal" title="MIT">MIT</dd></div>
-          <div class="fs-cardMetaPair"><dt class="fs-cardMetaKey">作者</dt><dd class="fs-cardMetaVal" title="skill-of-me">skill-of-me</dd></div>
-          <div class="fs-cardMetaPair"><dt class="fs-cardMetaKey">核验日期</dt><dd class="fs-cardMetaVal" title="2026-11-18">2026-11-18</dd></div>
-        </dl>
-        
-        <div class="fs-cardFoot">
-          <span class="fs-cardFootSpacer"></span>
+        <div class="fs-cardActions">
           <button type="button" class="pv-btn pv-btn-ghost pv-btn-sm">详情</button>
           <button type="button" class="pv-btn pv-btn-primary pv-btn-sm">安装</button>
         </div>
       </li>
       <li class="fs-card" data-installed="false">
-        <div class="fs-cardHead">
-          <div class="fs-cardTitles">
+        <div class="fs-cardMain">
+          <div class="fs-cardHead">
             <button type="button" class="fs-cardName">智能数据可视化</button>
             <span class="fs-cardNameEn">Smart Data Visualization</span>
+            
+          </div>
+          <p class="fs-cardSummary" title="分析数据特征并推荐最佳图表组合，用 Plotly 生成交互式 HTML 仪表板，覆盖柱状/折线/散点/箱线/热力/旭日等十余种图型。">分析数据特征并推荐最佳图表组合，用 Plotly 生成交互式 HTML 仪表板，覆盖柱状/折线/散点/箱线/热力/旭日等十余种图型。</p>
+          <div class="fs-cardMeta">
+            <span class="fs-cardChips">
+              <span class="pv-tag pv-tag-outline">数据与技术</span>
+              <span class="pv-tag pv-tag-outline">SkillHub</span>
+              <span class="pv-tag pv-tag-outline">1.0.0</span>
+              <span class="pv-tag pv-tag-outline">专有</span>
+            </span>
+            <span class="fs-cardFacts">
+              <span class="fs-cardFact"><span class="fs-cardFactKey">作者</span><span class="fs-cardFactVal" title="user_af28adda">user_af28adda</span></span>
+              <span class="fs-cardFact"><span class="fs-cardFactKey">核验日期</span><span class="fs-cardFactVal" title="2026-11-18">2026-11-18</span></span>
+            </span>
           </div>
           
         </div>
-        <p class="fs-cardSummary" title="分析数据特征并推荐最佳图表组合，用 Plotly 生成交互式 HTML 仪表板，覆盖柱状/折线/散点/箱线/热力/旭日等十余种图型。">分析数据特征并推荐最佳图表组合，用 Plotly 生成交互式 HTML 仪表板，覆盖柱状/折线/散点/箱线/热力/旭日等十余种图型。</p>
-        <dl class="fs-cardMeta">
-          <div class="fs-cardMetaPair"><dt class="fs-cardMetaKey">类别</dt><dd class="fs-cardMetaVal" title="数据与技术">数据与技术</dd></div>
-          <div class="fs-cardMetaPair"><dt class="fs-cardMetaKey">版本</dt><dd class="fs-cardMetaVal" title="1.0.0">1.0.0</dd></div>
-          <div class="fs-cardMetaPair"><dt class="fs-cardMetaKey">来源</dt><dd class="fs-cardMetaVal" title="SkillHub">SkillHub</dd></div>
-          <div class="fs-cardMetaPair"><dt class="fs-cardMetaKey">协议</dt><dd class="fs-cardMetaVal" title="专有">专有</dd></div>
-          <div class="fs-cardMetaPair"><dt class="fs-cardMetaKey">作者</dt><dd class="fs-cardMetaVal" title="user_af28adda">user_af28adda</dd></div>
-          <div class="fs-cardMetaPair"><dt class="fs-cardMetaKey">核验日期</dt><dd class="fs-cardMetaVal" title="2026-11-18">2026-11-18</dd></div>
-        </dl>
-        
-        <div class="fs-cardFoot">
-          <span class="fs-cardFootSpacer"></span>
+        <div class="fs-cardActions">
           <button type="button" class="pv-btn pv-btn-ghost pv-btn-sm">详情</button>
           <button type="button" class="pv-btn pv-btn-primary pv-btn-sm">安装</button>
         </div>
@@ -521,8 +577,6 @@ html,body{margin:0;padding:0;background:var(--dsw-alias-bg-base);color:var(--dsw
         <p class="fs-footerText">2 分钟前刷新</p>
         <p class="fs-footerText">共 171 个 · 已安装 2 个 · 显示 171 个</p>
         <span class="pv-tag pv-tag-info">上游实时目录</span>
-        <span class="fs-footerSpacer"></span>
-        <button type="button" class="pv-btn pv-btn-ghost pv-btn-sm">刷新</button>
       </footer>
 
     </div>

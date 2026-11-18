@@ -3,6 +3,23 @@
 All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/), and this project follows [Semantic Versioning](https://semver.org/).
 
+## 0.2.1 — 2026-11-18
+
+版式微调，只动界面，不动数据与安装链路。
+
+### 变更
+
+- **刷新按钮上移并变醒目**：从页脚左下角搬到元信息行，**紧贴在「实时 / 非实时」标签右侧**，改成**浅红底 + 红描边 + 红字**的胶囊按钮（`background: color-mix(in srgb, var(--dsw-alias-state-error-primary) 10%, transparent)`、`border` 45%、`color` 纯 token；hover 分别提到 18% / 68%）。不用实心大红——整页只此一个彩色元素，浅色已经足够醒目，实心红反而抢内容。页脚不再放第二个刷新按钮：同一屏只留一个刷新入口。
+- **元信息行去掉核验日期**：一行只剩「数据源 · 更新 · 实时/非实时 · 刷新」。核验日期仍在每张卡片的元信息里，信息没有丢失。
+- **技能卡从多列网格改成一行一条的长条卡**：`.fs-grid` 改为 `flex-direction:column`，卡片横向分两段——左侧弹性信息段（名称 + 英文名 + 一行摘要 + 元信息）、右侧定宽动作段（详情 / 安装或卸载）。窄屏（≤720px）时动作段落到卡片下方并右对齐。
+- **元信息按语义分两种形态**：类别 / 来源 / 版本 / 协议用官方 `Tag`（`tone="outline"`）画成**四枚胶囊**；作者 / 核验日期**直接写成文本**，不再有键名网格。`skillFieldPairs()` 每项加 `capsule` 标记，一处定义、两处消费。
+- 摘要由两行截断改为单行（长条卡横向空间充足，不需要第二行抬高卡片）。
+- 加载骨架从 168px 方格卡改成 78px 长条，与真实卡片同形，目录到手时不跳版。
+
+### 测试
+
+`npm test` **91/91**（Host 65 + 浏览器半 26）。新增/改写断言：刷新按钮是 `button.fs-refresh` 且索引紧跟在 `freshness` 之后、全页只有一个刷新按钮、页脚无按钮、元信息行无核验日期、`.fs-grid` 必须是纵向 flex 且不得出现 `grid-template-columns`、四枚胶囊的 `data-field` 顺序与 `tone`、作者/核验日期不得用胶囊。
+
 ## 0.2.0 — 2026-11-18
 
 这一版只解决一件事：**装得快、装得上、装完就能用**。界面同时按「banner → 元信息一行 → 搜索/视图 → 分割线 → 胶囊分类 → 技能卡片」重排。

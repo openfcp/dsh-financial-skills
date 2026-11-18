@@ -516,6 +516,19 @@ test('CSS：注入一次、幂等、带 data-plugin / data-plugin-css 守卫属�
     assert.ok(/\.fs-card\[data-installed="true"\]\{[^}]*border-color:var\(--dsw-alias-state-success-primary\)/.test(style.textContent), '已安装卡片换一种外边框色')
     assert.ok(style.textContent.includes('var(--dsw-alias-label-secondary)'), 'CSS 必须用官方文字 token')
 
+    // 一行一条长条卡：列表是纵向 flex，不是多列网格
+    assert.ok(/\.fs-grid\{[^}]*flex-direction:column/.test(style.textContent), '卡片必须一列到底（一行一条）')
+    assert.equal(/\.fs-grid\{[^}]*grid-template-columns/.test(style.textContent), false, '卡片不得再排成多列网格')
+    // 刷新按钮：浅红底 + 红字 + 红描边，胶囊形；只用 error 语义色，不写死任何红
+    const refreshCss = /\.fs-refresh\{([^}]*)\}/.exec(style.textContent)
+    assert.ok(refreshCss !== null, 'CSS 必须有 .fs-refresh 规则')
+    const refreshDecl = refreshCss[1]
+    assert.match(refreshDecl, /border:1px solid color-mix\(in srgb,var\(--dsw-alias-state-error-primary\)/, '刷新按钮是红色描边')
+    assert.match(refreshDecl, /background:color-mix\(in srgb,var\(--dsw-alias-state-error-primary\)/, '刷新按钮是浅红填充（不是实心大红）')
+    assert.match(refreshDecl, /color:var\(--dsw-alias-state-error-primary\)/, '刷新按钮文字用红色')
+    assert.match(refreshDecl, /border-radius:999px/, '刷新按钮是胶囊形')
+    assert.equal(/background:var\(--dsw-alias-state-error-primary\)/.test(style.textContent), false, '不得用实心大红填充')
+
     client.evaluateAgain()
     assert.equal(client.appended.length, 1, '第二次求值不得重复注入 CSS')
   })
@@ -813,17 +826,32 @@ test('渲染：banner / 元信息一行 / 搜索+视图 / 分割线 / 10 枚分�
     assert.ok(heroText.includes(TOTAL_SKILLS + ' 个技能'), 'banner 右侧统计技能条数')
     assert.ok(heroText.includes(fixture.catalog.categories.length + ' 个分类'), 'banner 右侧统计分类数')
 
-    // 2. 元信息一行：数据源 · 更新 · 核验 · 非实时 · 刷新
+    // 2. 元信息一行：数据源 · 更新 ·「实时/非实时」+ 紧贴其右的红色刷新按钮
     const metaRow = byPart(tree, 'meta-row')
     assert.equal(metaRow.length, 1, '必须有元信息一行')
     const metaText = textOf(metaRow[0])
     assert.ok(metaText.includes('数据源'), '元信息行标出数据源')
     assert.ok(metaText.includes('openfcp/awesome-financial-skills'))
     assert.ok(metaText.includes('更新 ' + SNAPSHOT.updated), '元信息行给目录更新日期')
-    assert.ok(metaText.includes('核验 ' + SNAPSHOT.verified_at), '元信息行给最近核验日期')
+    assert.equal(metaText.includes('核验'), false, '核验日期不再占元信息一行（改由卡片承载）')
+    assert.equal(byPart(metaRow[0], 'verified-line').length, 0, '元信息行不再有核验日期位')
     assert.ok(metaText.includes('非实时'), 'cache 来源必须显式标注非实时')
-    assert.ok(metaText.includes('刷新'), '元信息行右侧是刷新按钮')
-    assert.equal(byPart(metaRow[0], 'refresh-action').length, 1, '刷新按钮放在元信息行内')
+    assert.ok(metaText.includes('刷新'), '元信息行带刷新按钮')
+
+    // 刷新按钮：紧挨在「实时/非实时」标签右边，且是实心红的原生按钮（不是 ghost 小按钮）
+    const refreshActions = byPart(metaRow[0], 'refresh-action')
+    assert.equal(refreshActions.length, 1, '刷新按钮放在元信息行内')
+    assert.equal(refreshActions[0].type, 'button', '刷新渲染成原生 button')
+    assert.equal(refreshActions[0].props.className, 'fs-refresh')
+    assert.equal(refreshActions[0].props.disabled, false)
+    assert.equal(textOf(refreshActions[0]), '刷新')
+    const slots = metaRow[0].children.filter((node) => node !== null && node !== undefined && node.props !== undefined)
+    const freshnessIndex = slots.findIndex((node) => node.props['data-dsh-part'] === 'freshness')
+    const refreshIndex = slots.findIndex((node) => node.props['data-dsh-part'] === 'refresh-action')
+    assert.ok(freshnessIndex >= 0, '元信息行必须有实时/非实时标签')
+    assert.equal(refreshIndex, freshnessIndex + 1, '刷新按钮必须紧跟在实时标签右边（中间不隔别的元素）')
+    // 元信息行不再有把刷新推到最右的弹性占位
+    assert.equal(elements(metaRow[0], (node) => node.props !== undefined && node.props.className === 'fs-metaSpacer').length, 0)
 
     // 3. 搜索（左）+ 视图切换（右）：分割线前
     const toolbar = byPart(tree, 'toolbar')
@@ -891,7 +919,12 @@ test('渲染：banner / 元信息一行 / 搜索+视图 / 分割线 / 10 枚分�
     assert.equal(successTags.length, 1, '已安装卡片要带 success Tag')
     assert.equal(textOf(successTags[0]), '已安装')
 
-    // 6. 页脚（保持原样）
+    // 6. 页脚（更新日期一览保持原样，但不再放第二个刷新按钮）
+    const footer = byPart(tree, 'footer')
+    assert.equal(footer.length, 1)
+    assert.equal(byPart(footer[0], 'refresh-action').length, 0, '刷新只在元信息行出现一次')
+    assert.equal(elements(footer[0], (node) => node.type === 'button').length, 0, '页脚不再有按钮')
+    assert.equal(elements(tree, (node) => node.props !== undefined && node.props.className === 'fs-refresh').length, 1, '全页只有一个刷新按钮')
     const footerCounts = byPart(tree, 'footer-counts')
     assert.equal(footerCounts.length, 1)
     assert.equal(textOf(footerCounts[0]), `共 ${TOTAL_SKILLS} 个 · 已安装 2 个 · 显示 ${TOTAL_SKILLS} 个`)
@@ -901,7 +934,7 @@ test('渲染：banner / 元信息一行 / 搜索+视图 / 分割线 / 10 枚分�
   })
 })
 
-test('渲染：卡片结构 = 中文名 + 英文名 + 两行摘要 + 六项元信息 + 官方 Button 动作', async () => {
+test('渲染：长条卡片 = 中文名 + 英文名 + 单行摘要 + 四枚胶囊 + 两项纯文本 + 官方 Button 动作', async () => {
   await withClient({}, async (client) => {
     const mounted = mountComponents(client)
     const fixture = buildFixture()
@@ -928,27 +961,41 @@ test('渲染：卡片结构 = 中文名 + 英文名 + 两行摘要 + 六项元�
     assert.ok(nameEn !== undefined, '卡片要显示英文名')
     assert.equal(textOf(nameEn), skill.name.en)
 
-    // 摘要：两行截断（-webkit-line-clamp:2 的类），title 提供全文
+    // 摘要：长条卡只占一行（-webkit-line-clamp:1 的类），title 提供全文
     const summary = elements(cardTree, (node) => node.props !== undefined && node.props.className === 'fs-cardSummary')[0]
     assert.ok(summary !== undefined)
     assert.equal(textOf(summary), skill.summary.zh)
     assert.equal(summary.props.title, skill.summary.zh)
 
-    // 六项元信息：类别 / 版本 / 来源 / 协议 / 作者 / 核验日期
+    // 长条卡：信息段（弹性）+ 动作段（定宽）并排，一行一条
+    const main = elements(cardTree, (node) => node.props !== undefined && node.props.className === 'fs-cardMain')
+    assert.equal(main.length, 1, '卡片左侧是弹性信息段')
+    const actions = elements(cardTree, (node) => node.props !== undefined && node.props.className === 'fs-cardActions')
+    assert.equal(actions.length, 1, '卡片右侧是定宽动作段')
+    assert.equal(cardTree.children.indexOf(main[0]) < cardTree.children.indexOf(actions[0]), true, '信息在左、动作在右')
+
+    // 元信息：类别 / 来源 / 版本 / 协议 → 胶囊；作者 / 核验日期 → 纯文本
     const meta = elements(cardTree, (node) => node.props !== undefined && node.props.className === 'fs-cardMeta')[0]
-    assert.ok(meta !== undefined, '卡片要有元信息网格')
-    assert.equal(meta.type, 'dl')
-    const keys = elements(meta, (node) => node.props !== undefined && node.props.className === 'fs-cardMetaKey').map((node) => textOf(node))
-    assert.deepEqual(keys, ['类别', '版本', '来源', '协议', '作者', '核验日期'])
-    const values = elements(meta, (node) => node.props !== undefined && node.props.className === 'fs-cardMetaVal').map((node) => textOf(node))
-    assert.deepEqual(values, [
-      '消费者保护',
-      skill.version,
-      'SkillHub',
-      '专有',
-      skill.author,
-      SNAPSHOT.verified_at,
-    ])
+    assert.ok(meta !== undefined, '卡片要有元信息行')
+    assert.equal(meta.type, 'div')
+
+    const chips = byPart(cardTree, 'card-chips')
+    assert.equal(chips.length, 1)
+    const capsuleTags = elements(chips[0], (node) => node.type === client.primitives.Tag)
+    assert.deepEqual(capsuleTags.map((node) => node.props['data-field']), ['field.category', 'field.source', 'field.version', 'field.license'])
+    assert.deepEqual(capsuleTags.map((node) => textOf(node)), ['消费者保护', 'SkillHub', skill.version, '专有'])
+    assert.ok(capsuleTags.every((node) => node.props.tone === 'outline'), '四枚胶囊统一 outline tone')
+
+    const facts = byPart(cardTree, 'card-facts')
+    assert.equal(facts.length, 1)
+    const factItems = elements(facts[0], (node) => node.props !== undefined && node.props.className === 'fs-cardFact')
+    assert.deepEqual(factItems.map((node) => node.props['data-field']), ['field.author', 'field.verifiedAt'])
+    const factKeys = elements(facts[0], (node) => node.props !== undefined && node.props.className === 'fs-cardFactKey').map((node) => textOf(node))
+    assert.deepEqual(factKeys, ['作者', '核验日期'], '作者与核验日期保留键名，直接写成文本')
+    const factValues = elements(facts[0], (node) => node.props !== undefined && node.props.className === 'fs-cardFactVal').map((node) => textOf(node))
+    assert.deepEqual(factValues, [skill.author, SNAPSHOT.verified_at])
+    assert.equal(elements(facts[0], (node) => node.type === client.primitives.Tag).length, 0, '作者/核验日期不用胶囊')
+
     assert.equal(cardTree.props['data-installed'], 'false')
     assert.equal(elements(cardTree, (node) => node.props !== undefined && node.props['data-dsh-part'] === 'card-invocation').length, 0, '未安装不显示调用名')
 
@@ -992,10 +1039,11 @@ test('渲染：技能卡片英文名与调用名的纯函数行为', async () =>
     assert.equal(invocationNameOf({ installedInvocationName: 'gongwen' }), 'gongwen')
     assert.equal(invocationNameOf({}), '', '没有调用名时返回空串')
 
-    // 缺值统一「未标注」，但六项一项不少
+    // 缺值统一「未标注」，但六项一项不少；前四项走胶囊，后两项走纯文本
     const pairs = skillFieldPairs({}, { categoryTitle: '消费者保护', sourceLabel: 'GitHub', lang: 'zh' })
-    assert.deepEqual(pairs.map((pair) => pair.key), ['field.category', 'field.version', 'field.source', 'field.license', 'field.author', 'field.verifiedAt'])
-    assert.deepEqual(pairs.map((pair) => pair.value), ['消费者保护', '未标注', 'GitHub', '未标注', '未标注', '未标注'])
+    assert.deepEqual(pairs.map((pair) => pair.key), ['field.category', 'field.source', 'field.version', 'field.license', 'field.author', 'field.verifiedAt'])
+    assert.deepEqual(pairs.map((pair) => pair.value), ['消费者保护', 'GitHub', '未标注', '未标注', '未标注', '未标注'])
+    assert.deepEqual(pairs.map((pair) => pair.capsule), [true, true, true, true, false, false], '类别/来源/版本/协议是胶囊，作者/核验日期是纯文本')
     const proprietary = skillFieldPairs({ license: 'proprietary' }, { categoryTitle: '', sourceLabel: '', lang: 'zh' })
     assert.equal(proprietary[3].value, '专有', 'proprietary 走本地化文案')
   })
@@ -1109,8 +1157,8 @@ test('渲染：刷新走 catalog?refresh=1，失败降级为错误行且保留�
     const rowsOf = () => cardsOf(tree)
     assert.equal(rowsOf().length, TOTAL_SKILLS)
 
-    const refreshButton = elements(tree, (node) => node.type === client.primitives.Button && textOf(node) === '刷新')[0]
-    assert.ok(refreshButton !== undefined, '页脚必须有刷新按钮')
+    const refreshButton = elements(tree, (node) => node.type === 'button' && node.props.className === 'fs-refresh')[0]
+    assert.ok(refreshButton !== undefined, '元信息行必须有刷新按钮')
     refreshButton.props.onClick()
     await flush()
     assert.equal(seenRefresh, true, '点刷新必须带 refresh=1')
@@ -1118,7 +1166,9 @@ test('渲染：刷新走 catalog?refresh=1，失败降级为错误行且保留�
     const allText = texts(tree).join('\n')
     assert.ok(allText.includes('刷新失败：ETIMEDOUT'), '刷新失败要有一条错误行（不弹 alert）')
     assert.equal(rowsOf().length, TOTAL_SKILLS, '刷新失败不得清空已有目录')
-    assert.ok(elements(tree, (node) => node.type === client.primitives.Button && textOf(node) === '刷新').length >= 1, '失败后按钮恢复可点')
+    const recovered = elements(tree, (node) => node.type === 'button' && node.props.className === 'fs-refresh')
+    assert.equal(recovered.length, 1)
+    assert.equal(recovered[0].props.disabled, false, '失败后按钮恢复可点')
   })
 })
 
@@ -1173,7 +1223,8 @@ test('渲染：初次加载有骨架与 TextShimmer，且 banner/元信息行先
     const metaText = textOf(byPart(tree, 'meta-row')[0])
     assert.ok(metaText.includes('数据源'), '加载态数据源已经可见')
     assert.ok(metaText.includes('更新 —'), '日期未知时写占位符而不是整行消失')
-    assert.ok(metaText.includes('核验 —'))
+    assert.equal(metaText.includes('核验'), false, '元信息行不再有核验日期')
+    assert.equal(elements(tree, (node) => node.props !== undefined && node.props.className === 'fs-refresh').length, 1, '加载态也有刷新按钮')
     assert.equal(byPart(tree, 'toolbar').length, 1, '加载态也能看到搜索框')
     assert.equal(byPart(tree, 'divider').length, 1)
     assert.equal(byPart(tree, 'footer').length, 0, '加载态不渲染页脚')

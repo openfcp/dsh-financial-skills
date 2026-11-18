@@ -19,11 +19,11 @@
 
 1. **官方原语优先**：搜索框、视图切换、分类胶囊、标签、按钮、详情弹窗、Markdown 正文、加载文案
    全部来自 `@deepseek-ai/dsh-client-ui-primitives`。插件自己的 CSS 只负责**布局容器、banner、
-   元信息行、卡片网格、弹窗正文外壳**这些原语覆盖不到的结构。
+   元信息行、卡片列表、弹窗正文外壳**这些原语覆盖不到的结构。
 2. **官方 token 优先**：颜色、圆角、边框、骨架底色全部走 `var(--dsw-*)`；字体继承官方或
    `var(--ds-font-family-code)`。亮/暗主题不做任何插件侧覆盖，由宿主替换 token 值。
-3. **版式顺序固定**（用户指定）：banner → 元信息一行（数据源 / 更新 / 核验 / 非实时 / 刷新）→
-   搜索（左）+ 视图（右）→ 横分割线 → 胶囊分类 → 技能卡片网格 → 页脚（更新日期一览，保持原样）。
+3. **版式顺序固定**（用户指定）：banner → 元信息一行（数据源 / 更新 / 实时或非实时 + **紧跟其右的红色刷新**）→
+   搜索（左）+ 视图（右）→ 横分割线 → 胶囊分类 → **一行一条的长条卡片**（自上而下排列）→ 页脚（更新日期一览，保持原样）。
 4. **先快后美**：首屏能立住（banner / 元信息 / 搜索框在骨架期就画出来）、装完立即出现、
    刷新不闪没；动效与装饰只做「不拖慢」的那部分。
 5. **数据与来源如实**：目录来自网络、本地缓存还是随包快照，UI 必须直说；快照/缓存不得标成实时；
@@ -37,18 +37,19 @@
 | 页边距 | `padding: 0 clamp(20px, 3vw, 40px) 40px` | `.fs-page` |
 | 顶部留白 | `padding-top: 20px` | `.fs-shell` |
 | shell 内区块间距 | `gap: 18px`（banner / 元信息 / 工具条 / 分割线 / 内容 / 页脚） | `.fs-shell` |
-| 面板内间距 | `gap: 14px`（分类条 / 通知 / 卡片网格） | `.fs-panelBody` |
-| 卡片网格 | `grid-template-columns: repeat(auto-fill, minmax(320px, 1fr))`、`gap: 12px` | `.fs-grid` |
+| 面板内间距 | `gap: 14px`（分类条 / 通知 / 卡片列表） | `.fs-panelBody` |
+| 卡片列表 | `display:flex; flex-direction:column; gap:10px`（**一行一条**，不排多列） | `.fs-grid` |
 | banner 标题 | `19px / 26px / 600` | `.fs-heroTitle` |
 | banner slogan | `12.5px / 18px`，`--dsw-alias-label-secondary` | `.fs-heroSlogan` |
 | 元信息行 / caption | `12px / 18px`，`--dsw-alias-label-tertiary` | `.fs-metaRow`、`.fs-footerText` |
 | 卡片名称 | `14.5px / 21px / 600` | `.fs-cardName` |
 | 卡片英文名 | `11.5px / 16px`，`--dsw-alias-label-tertiary` | `.fs-cardNameEn` |
-| 卡片摘要 | `12px / 18px`，两行截断 | `.fs-cardSummary` |
-| 卡片元信息 | `11.5px / 16px`，两列网格 | `.fs-cardMeta` |
+| 卡片摘要 | `12px / 18px`，单行截断（长条卡横向空间够，不需要第二行） | `.fs-cardSummary` |
+| 卡片元信息 | `11.5px / 16px`；四枚胶囊 + 两项纯文本，`flex-wrap` | `.fs-cardMeta` / `.fs-cardChips` / `.fs-cardFacts` |
+| 刷新按钮 | `height 26`、`padding 0 12`、`border-radius 999px`、`12.5/26/500` | `.fs-refresh` |
 | 圆角 | banner / 卡片 / 弹窗外壳 `--dsw-radius-xl`；banner 标识盒 `--dsw-radius-lg` | 见各选择器 |
 | 边框 | 卡片 `1px solid var(--dsw-alias-border-l2)`；已安装卡片换成 `--dsw-alias-state-success-primary`；分割线 `--dsw-alias-border-l2` | `.fs-card`、`.fs-divider` |
-| 响应式 | 无断点：1120 上限 + `clamp` 页边距 + 网格 `auto-fill` + 元信息/动作 `flex-wrap` | 全页 |
+| 响应式 | 唯一断点 `720px`：长条卡从「信息左 / 动作右」改为上下两段；其余靠 `clamp` 页边距 + 元信息/胶囊 `flex-wrap` | `.fs-card`（`@media (max-width:720px)`） |
 
 ## 4. 区域 → 官方原语 → token → 尺寸
 
@@ -60,21 +61,22 @@
 | 4 | banner 标题 | `<h1>` | `--dsw-alias-label-primary` | `19/26/600`、字距 `0.2px` |
 | 5 | banner slogan | `<p>`（固定文案） | `--dsw-alias-label-secondary` | `12.5/18` |
 | 6 | banner 统计胶囊 | `<span>`（非交互，只读数字） | 边框 `--dsw-alias-border-l2`、文字 `--dsw-alias-label-secondary` | `padding 4 10`、`11.5/16`、`tabular-nums`、`border-radius 999px` |
-| 7 | 元信息行 | `<div>` + `<span>` 键值对 + 官方 `Tag`（实时/非实时）+ 官方 `Button`（刷新） | 键 `--dsw-alias-label-caption`、值 `--dsw-alias-label-secondary`、分隔点 `--dsw-alias-border-l3`；Tag tone `info`（实时）/ `warning`（非实时） | `12/18`、`gap 10`、`tabular-nums`、刷新按钮 `size="sm" variant="ghost"` |
+| 7 | 元信息行 | `<div>` + `<span>` 键值对 + 官方 `Tag`（实时/非实时）+ **紧贴其右的原生 `<button>`（刷新）** | 键 `--dsw-alias-label-caption`、值 `--dsw-alias-label-secondary`、分隔点 `--dsw-alias-border-l3`；Tag tone `info`（实时）/ `warning`（非实时）；刷新**浅红底（10%）+ 红描边（45%）+ 红字**，全部由 `--dsw-alias-state-error-primary` 经 `color-mix` 调出来，不写死红色 | `12/18`、`gap 10`、`tabular-nums`；刷新 `height 26`、`padding 0 11`、胶囊圆角、图标 14 |
 | 8 | 工具栏 | `<div>` 布局容器（搜索左、视图右，中间 `flex:1` 撑开） | — | `gap 12`、`flex-wrap` |
 | 9 | 搜索框 | 官方 `Input`（`type=search`）+ 官方 `IconSearchOutlineRegular` 前置图标 | 原语自带（含 focus 环） | 容器 `flex:0 1 360px; min-width:200px; max-width:360px`；图标 16 |
 | 10 | 视图切换 | 官方 `SegmentedControl`（`全部插件` / `已安装 (n)`） | 原语自带 | 结构 id `financial-skills-view` |
 | 11 | 横分割线 | `<hr>` | `--dsw-alias-border-l2` | `.5px` |
 | 12 | 分类胶囊 | 官方 `Pill` × 10（全部 + 9 类）+ 计数 `span` | Pill 自带选中态；计数 `--dsw-alias-label-caption` | `12/18`、`tabular-nums`、gap 8 |
-| 13 | 卡片网格 | `<ul>` / `<li>` | — | `minmax(320px,1fr)`、`gap 12` |
-| 14 | 卡片容器 | `<li>` | 边框 `1px --dsw-alias-border-l2`（已安装换 `--dsw-alias-state-success-primary`）、底色 `--dsw-alias-bg-layer-1`、hover `--dsw-alias-bg-layer-2` + `--dsw-alias-border-l3`、圆角 `--dsw-radius-xl` | `padding 14 16 12`、`gap 10` |
+| 13 | 卡片列表 | `<ul>`（纵向 flex）/ `<li>` | — | `flex-direction:column`、`gap 10` |
+| 14 | 卡片容器（长条） | `<li>` 横向两段：`.fs-cardMain`（`flex:1`，信息）+ `.fs-cardActions`（`flex:none`，动作） | 边框 `1px --dsw-alias-border-l2`（已安装换 `--dsw-alias-state-success-primary`）、底色 `--dsw-alias-bg-layer-1`、hover `--dsw-alias-bg-layer-2` + `--dsw-alias-border-l3`、圆角 `--dsw-radius-xl` | `padding 12 14 12 16`、`gap 16`、`align-items:center` |
 | 15 | 卡片名称 | 原生 `<button>`（link 样式，无底色无边框） | `color: inherit` | `14.5/21/600`；hover 下划线；不覆盖焦点环 |
 | 16 | 卡片英文名 | `<span>` | `--dsw-alias-label-tertiary` | `11.5/16`；与中文名相同则不渲染 |
-| 17 | 卡片摘要 | `<p>`，`-webkit-line-clamp: 2`，`title` 给全文 | `--dsw-alias-label-tertiary` | `12/18`、`min-height 36`（两行恒定） |
-| 18 | 卡片元信息 | `<dl>` 两列网格：类别 / 版本 / 来源 / 协议 / 作者 / 核验日期（缺值写「未标注」，不隐藏） | 键 `--dsw-alias-label-caption`、值 `--dsw-alias-label-secondary`、上分隔线 `--dsw-alias-border-l2` | `11.5/16`、gap `4px 14px` |
+| 17 | 卡片摘要 | `<p>`，`-webkit-line-clamp: 1`，`title` 给全文 | `--dsw-alias-label-tertiary` | `12/18`（单行，长条卡不再预留两行高度） |
+| 18 | 卡片元信息 · **胶囊** | 官方 `Tag` `tone="outline"` × 4：类别 / 来源 / 版本 / 协议（缺值写「未标注」，不隐藏） | 原语自带描边与底色 | `11.5/16`、`gap 6`、`flex-wrap` |
+| 18b | 卡片元信息 · **纯文本** | `<span>` 键值对 × 2：作者 / 核验日期 | 键 `--dsw-alias-label-caption`、值 `--dsw-alias-label-secondary` | `11.5/16`、gap `4px 12px` |
 | 19 | 卡片调用名 | `<p>` + `<code>`（仅已安装且已知调用名时） | `--dsw-alias-state-success-primary`、`--ds-font-family-code` | `11.5/16`、值省略号截断 |
-| 20 | 卡片动作 | 官方 `Button` `size="sm"` | `variant="primary"`（安装）/ `variant="ghost"`（详情、卸载） | 原语自带；`margin-top:auto` 让同一行卡片底部对齐 |
-| 21 | 加载态 | 官方 `TextShimmer` + 6 张卡片骨架；**banner / 元信息行 / 工具条 / 分割线照常渲染** | 骨架底色 `--dsw-alias-bg-skeleton`、文案 `--dsw-alias-label-tertiary` | 骨架卡 `height 168`、`radius xl`、`role="status"` |
+| 20 | 卡片动作 | 官方 `Button` `size="sm"`，装在 `.fs-cardActions`（定宽、不与信息抢位） | `variant="primary"`（安装）/ `variant="ghost"`（详情、卸载） | 原语自带；`gap 6`、窄屏（≤720px）时换行到卡片下方并右对齐 |
+| 21 | 加载态 | 官方 `TextShimmer` + 6 条卡片骨架；**banner / 元信息行（含刷新按钮）/ 工具条 / 分割线照常渲染** | 骨架底色 `--dsw-alias-bg-skeleton`、文案 `--dsw-alias-label-tertiary` | 骨架条 `height 78`、`radius xl`、`role="status"` |
 | 22 | 错误态 | 官方 `IconWarningTriangleOutlineRegular` + `Button variant="outline"` | `--dsw-alias-state-error-primary`（文案） | 图标 28、`13/20`、`padding 40 16` |
 | 23 | 空结果态 | 官方 `IconSkillOutlineRegular` + `Button variant="outline"`（清空筛选） | `--dsw-alias-label-tertiary` / `--dsw-alias-label-caption` | 图标 28、`13/20` + `12/18` |
 | 24 | 离线 / 快照提示 | `<div>` + `Button variant="ghost"`（就地重试） | `--dsw-alias-state-warn-primary` | `12/18`、gap 8 |
@@ -83,7 +85,7 @@
 | 27 | 详情正文 | 官方 `MarkdownText`（`variant="body"`，传 labels） | 原语自带 | 自适应 |
 | 28 | 详情 footer | 官方 `Button size="sm"`：安装/卸载、复制 SkillHub 命令、打开来源站 | primary/ghost/outline；成功/失败提示用 `--dsw-alias-state-success-primary` / `--dsw-alias-state-error-primary` | gap 8、可换行 |
 | 29 | 文件清单 | `<code>` 小标签（最多 12 个 + 剩余计数） | `--ds-font-family-code`（官方核心字体 token，带 `ui-monospace` 回退） | `12.5px`、gap 6 |
-| 30 | 页脚（保持原样） | `<footer>` + 官方 `Tag` + 官方 `Button variant="ghost"`（刷新） | 分隔线 `--dsw-alias-border-l2`；文字 `--dsw-alias-label-tertiary`；图标旋转 `--ds-transition-duration` / `--ds-ease-in-out` | `12/18`、gap 12、`padding 8 0 4` |
+| 30 | 页脚（更新日期一览，保持原样） | `<footer>` + 官方 `Tag`（来源）；**不再放刷新按钮**——同一屏只留一个刷新入口 | 分隔线 `--dsw-alias-border-l2`；文字 `--dsw-alias-label-tertiary` | `12/18`、gap 12、`padding 8 0 4` |
 
 ### 4.1 为什么卡片名称用原生 `<button>`
 
@@ -95,7 +97,8 @@
 ### 4.2 为什么去掉头像 / 字形盒
 
 旧版每条技能左侧有 48×48 首字盒：卡片宽度只有 320px 起，再让 48px 盒 + 间距吃掉横向空间，名称与摘要
-就只剩一行。去掉后：中文名 + 英文名两行标题、摘要两行、六项元信息两列，信息密度更高且不靠装饰。
+就只剩一行。改成一行一条的长条卡后横排空间宽敞，左侧只留文字：中文名 + 英文名同行、摘要一行、
+元信息「四枚胶囊 + 两项文本」一行——信息密度更高，且完全不靠装饰。
 
 ### 4.3 已安装卡片为什么换边框色而不是加底色
 
@@ -154,7 +157,7 @@
 | 状态 | 触发 | UI |
 | --- | --- | --- |
 | 初次加载 | 页面挂载、目录未到 | banner + 元信息行（日期位写「—」）+ 搜索/视图 + 分割线照常渲染，只把内容区换成 6 张骨架 + 官方 `TextShimmer`（`role="status"`）；无页脚 |
-| 就绪 | 目录到达 | 元信息行补上真实日期与实时/非实时 Tag → 分类条 + 卡片网格 + 页脚 |
+| 就绪 | 目录到达 | 元信息行补上真实日期与实时/非实时 Tag（刷新按钮一直在位）→ 分类条 + 长条卡片列表 + 页脚 |
 | 刷新中 | 元信息行刷新（或页脚刷新、离线提示重试） | 内容保留；两处刷新按钮 `disabled` + 图标旋转；元信息行按钮文案「刷新中…」 |
 | 首次加载失败 | 目录请求失败且无旧数据 | 整页错误态：原因 + 官方 `Button` 重试（真的重新请求） |
 | 刷新失败 | 已有目录时刷新失败 | 内容保留 + 一行「刷新失败：<原因>」，按钮恢复可点 |
@@ -189,7 +192,7 @@
 | 焦点 | 不写自定义 `outline`/`:focus-visible`；官方 Button/Input/Pill/Modal 的焦点环与焦点陷阱原样生效 |
 | 键盘 | 全部为原生按钮/输入；Tab 顺序符合视觉顺序；Modal 用官方实现（Esc 关闭、焦点回收） |
 | 状态播报 | 加载区 `role="status"`；错误/成功提示为正文文本（非仅颜色） |
-| 语义 | banner `<header>` + `<h1>`，卡片网格 `<ul>/<li>`，页脚 `<footer>`，详情元信息 `<dl>` |
+| 语义 | banner `<header>` + `<h1>`，卡片列表 `<ul>/<li>`，页脚 `<footer>`，详情元信息 `<dl>` |
 | 减少动态 | `prefers-reduced-motion` 下无过渡/动画 |
 | 对比度 | 全部文字使用官方语义色 token（primary/secondary/tertiary/caption），不自定义低对比色 |
 
@@ -232,7 +235,8 @@ CSS 只注入一次，注入标记：
 | 分割线 | `PanelPage` | `.fs-divider`、`data-dsh-part="divider"` |
 | 视图内容面板 | `PanelPage` | `.fs-panelBody`、`role="tabpanel"`、id `financial-skills-view-<view>-panel` |
 | 分类条 | `PanelPage` | `.fs-categoryBar/.fs-pillCount`、`data-dsh-part="category-bar"/"category-pill"` |
-| 卡片网格 / 卡片 | `SkillCard` | `.fs-grid/.fs-card/.fs-cardHead/.fs-cardTitles/.fs-cardName/.fs-cardNameEn/.fs-cardSummary/.fs-cardMeta/.fs-cardMetaPair/.fs-cardMetaKey/.fs-cardMetaVal/.fs-cardInvoke/.fs-cardInvokeCode/.fs-cardFoot/.fs-cardFootSpacer`、`data-dsh-part="skill-grid"/"skill-card"/"card-meta"/"card-invocation"`、`data-installed="true|false"` |
+| 卡片列表 / 长条卡 | `SkillCard` | `.fs-grid/.fs-card/.fs-cardMain/.fs-cardHead/.fs-cardName/.fs-cardNameEn/.fs-cardBadge/.fs-cardSummary/.fs-cardMeta/.fs-cardChips/.fs-cardFacts/.fs-cardFact/.fs-cardFactKey/.fs-cardFactVal/.fs-cardInvoke/.fs-cardInvokeCode/.fs-cardActions`、`data-dsh-part="skill-grid"/"skill-card"/"card-meta"/"card-chips"/"card-facts"/"card-actions"/"card-invocation"`、`data-field="field.*"`、`data-installed="true|false"` |
+| 刷新按钮 | `PanelPage` | `.fs-refresh/.fs-refreshIcon`、`data-dsh-part="refresh-action"`（紧随 `freshness` 之后，全页唯一） |
 | 状态 | `PanelPage` / `DetailModal` | `.fs-state/.fs-stateText/.fs-stateIcon/.fs-stateHint/.fs-banner/.fs-notice/.fs-noticeRow/.fs-noticeOk/.fs-notices/.fs-skeletons/.fs-skeletonGrid/.fs-skeletonCard` |
 | 页脚 | `PanelPage` | `.fs-footer/.fs-footerText/.fs-footerSpacer/.fs-spin`、`data-dsh-part="footer"/"footer-counts"` |
 | 详情 | `DetailModal` | 官方 `Modal` + `.fs-detail/.fs-detailContent/.fs-detailMeta/.fs-detailKey/.fs-detailValue/.fs-detailSource/.fs-detailTags/.fs-detailBody/.fs-detailFoot/.fs-detailFootMeta/.fs-detailFootActions/.fs-code/.fs-fileList/.fs-footHintOk/.fs-footHintError` |
@@ -263,7 +267,7 @@ node --test test/client-contract.test.mjs
   `skillFieldPairs`（六项齐全、缺值「未标注」、`proprietary` 本地化）、
   `secondaryName`（中↔英互补、同名不重复）、`invocationNameOf`；
 - **渲染**：banner + 元信息一行 + 搜索/视图 + 分割线 **顺序断言**、10 枚分类 Pill、全量技能卡片、
-  已安装卡片边框与 Tag、卡片结构（中文名/英文名/两行摘要/六项元信息/调用名/官方 Button 动作）、
+  已安装卡片边框与 Tag、长条卡结构（中文名+英文名/单行摘要/四枚胶囊/两项文本/调用名/官方 Button 动作）、
   视图/分类/搜索/空态交互、加载态骨架与「banner 先立住不跳版」、首次加载失败重试、
   刷新 `?refresh=1` 失败降级、快照/离线标注、
   详情 Modal（`MarkdownText`/元信息/footer 动作/proprietary 提示/复制失败回退）、安装与卸载调用宿主路由。
