@@ -343,7 +343,12 @@ test('http: readJson 解析对象、空体按 {} 处理、超限抛错', async (
 test('catalog: normalizeCatalog 归一化快照并保留 format 3 来源坐标', async () => {
   const raw = await snapshotRaw()
   const installed = new Map([
-    ['compliance-sales', { version: '9.9.9', installedAt: 1700000000000, path: '/tmp/skills/compliance-sales' }],
+    ['compliance-sales', {
+      version: '9.9.9',
+      installedAt: 1700000000000,
+      path: '/tmp/skills/compliance-sales',
+      invocationName: 'consumer-protection-review',
+    }],
   ])
   const catalog = normalizeCatalog(raw, installed)
 
@@ -373,6 +378,8 @@ test('catalog: normalizeCatalog 归一化快照并保留 format 3 来源坐标',
   assert.equal(sales.installedVersion, '9.9.9')
   assert.equal(sales.installedAt, 1700000000000)
   assert.equal(sales.installedPath, '/tmp/skills/compliance-sales')
+  // 目录 id 与调用名不同：面板要显示的是调用名，不是 id。
+  assert.equal(sales.installedInvocationName, 'consumer-protection-review')
   assert.equal(sales.pluginPath, undefined) // skillhub 没有仓库内路径
   assert.deepEqual(sales.source, {
     type: 'skillhub',
@@ -1264,11 +1271,15 @@ test('store: scanInstalled 识别目录 / 平铺形态并读出来源记录', as
   assert.equal(alpha.installedAt, 1700000000000)
   assert.equal(alpha.managed, true)
   assert.equal(alpha.path, join(root, 'alpha'))
+  // 调用名从 SKILL.md frontmatter 现读：provenance 里没记也能补全（旧版安装的自愈路径）。
+  assert.equal(alpha.invocationName, 'alpha-skill')
+  assert.equal(skills[1].invocationName, 'beta-skill')
 
   assert.equal(skills[1].managed, false)
   assert.equal(skills[1].version, undefined)
   assert.equal(skills[2].path, join(root, 'gamma.md'))
   assert.equal(skills[2].description, '平铺技能')
+  assert.equal(skills[2].invocationName, 'gamma-skill')
   assert.equal(skills[2].managed, false)
 })
 

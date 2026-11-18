@@ -5,17 +5,18 @@ The format follows [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/), 
 
 ## 0.2.3 — 2026-11-18
 
-去掉目录区顶部那条多余的黄色提示。
+去掉目录区顶部那条多余的黄色提示；已安装卡片补上真实的调用名。
 
 ### 变更
 
+- **已安装卡片不再显示「调用名未记录，重装一次即可补全」**：宿主侧 `scanInstalled` 直接从 `SKILL.md` 的 frontmatter 现读 `name` 作为调用名，`normalizeCatalog` 再把它透成 `installedInvocationName` 给面板。此前只有 0.2.1 之后装的那批技能把调用名写进了 `.financial-skills.json`，旧安装一律缺这条，前端于是回退成「未记录」——现在是现读，**旧安装不用重装也能显示**，目录形态（`<id>/SKILL.md`）与平铺形态（`<id>.md`）都覆盖。调用名与目录 id 本来就是两回事（例如 id `compliance-sales` 的调用名可能是 `consumer-protection-review`），面板亮的必须是前者。
 - **删除「当前展示本地缓存目录（非实时）。可点刷新从上游重取。」提示行**，以及它旁边那枚第二枚「重试」按钮。非实时状态已经由元信息行的「非实时」Tag 说明，刷新也已经有那一枚红色胶囊，多一条黄字 + 多一个按钮属于重复告知，还把搜索框和分类胶囊之间的版面撞出一道空档。
 - 页脚来源 Tag（`本地缓存（非实时）` / `随包快照（非实时）`）保留——它说明的是「这份清单从哪来」，与顶部状态标签分工不同。
 - 真错误仍然如实显示：目录抓取异常（`meta.error`）、安装/卸载失败、操作成功提示都不受影响。
 
 ### 测试
 
-`npm test` **92/92**（Host 65 + 浏览器半 27）。两处断言改为反向锁定：cache / snapshot / offline 三种来源**不得**再出现说明行，非实时态**不得**出现第二枚「重试」按钮，同时「目录抓取异常」这类真错误必须仍然显示。
+`npm test` **92/92**（Host 65 + 浏览器半 27）。新增断言：`scanInstalled` 的 `invocationName` 必须从 `SKILL.md` 现读（含没有 provenance 的旧安装与平铺形态），`normalizeCatalog` 必须把它透成 `installedInvocationName`。两处断言改为反向锁定：cache / snapshot / offline 三种来源**不得**再出现说明行，非实时态**不得**出现第二枚「重试」按钮，同时「目录抓取异常」这类真错误必须仍然显示。
 
 ## 0.2.2 — 2026-11-18
 
