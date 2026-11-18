@@ -22,7 +22,7 @@
 import { readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { createCatalog, cacheFileFor, DEFAULT_CACHE_TTL_MS, DEFAULT_TIMEOUT_MS, normalizeIndexUrls, SNAPSHOT_FILE } from './lib/catalog.js'
-import { createSource, DEFAULT_TREE_TTL_MS } from './lib/github.js'
+import { createSource, DEFAULT_MAX_TARBALL_BYTES, DEFAULT_TARBALL_TIMEOUT_MS, DEFAULT_TREE_TTL_MS } from './lib/github.js'
 import { createSkillhub } from './lib/skillhub.js'
 import { createRoutes } from './lib/routes.js'
 import { createStore, DEFAULT_LIMITS, resolveDshHome, resolveInstallRoot } from './lib/store.js'
@@ -113,6 +113,9 @@ export function resolveConfig(config, env = process.env, packageRoot = undefined
         ? join(packageRoot, 'catalog.snapshot.json')
         : SNAPSHOT_FILE
 
+  const tarballTimeoutMs = positiveNumber(options.tarballTimeoutMs, DEFAULT_TARBALL_TIMEOUT_MS)
+  const maxTarballBytes = positiveNumber(options.maxTarballBytes, DEFAULT_MAX_TARBALL_BYTES)
+
   const limits = {
     maxFiles: Math.floor(positiveNumber(options.maxFiles, DEFAULT_LIMITS.maxFiles)),
     maxFileBytes: Math.floor(positiveNumber(options.maxFileBytes, DEFAULT_LIMITS.maxFileBytes)),
@@ -126,6 +129,8 @@ export function resolveConfig(config, env = process.env, packageRoot = undefined
     cacheTtlMs,
     timeoutMs,
     treeTtlMs,
+    tarballTimeoutMs,
+    maxTarballBytes,
     offline,
     fixtureDir,
     cacheFile,
@@ -149,6 +154,8 @@ export function createDeps(config, ctx) {
     fixtureDir: config.fixtureDir,
     timeoutMs: config.timeoutMs,
     treeTtlMs: config.treeTtlMs,
+    tarballTimeoutMs: config.tarballTimeoutMs,
+    maxTarballBytes: config.maxTarballBytes,
     maxFileBytes: config.limits.maxFileBytes,
     logger,
   })
@@ -179,17 +186,71 @@ export function createDeps(config, ctx) {
   })
   const getSkills = () => {
     try {
-      if (ctx !== undefined && ctx !== null && typeof ctx.get === 'function') return ctx.get('skills')
-      return ctx !== undefined && ctx !== null ? ctx.skills : undefined
+      if (ctx === undefined || ctx === null) return undefined
+      // ctx.skills 是最常见的形状；某些宿主只暴露 ctx.get(name) 或根上下文。
+      if (ctx.skills !== undefined && ctx.skills !== null) return ctx.skills
+      if (typeof ctx.get === 'function') {
+        const viaGet = ctx.get('skills')
+        if (viaGet !== undefined && viaGet !== null) return viaGet
+      }
+      const root = ctx.root
+      if (root !== undefined && root !== null && root.skills !== undefined) return root.skills
+      return undefined
     } catch {
+      // 服务还没就绪时读它会抛，装/卸载不能因此失败。
       return undefined
     }
+  }
+  /**
+   * 安装 / 卸载后让技能立刻生效。
+   *
+   * 主通道是技能注册表的 `invalidateCache()`（每个 provider 的 control.invalidate
+   * 最终都落到它）：bump revision、清空采集缓存、派发 `skills/change`。次级通道是
+   * 像内置 write 工具那样广播 `fs/observed`，让其他观察者也收到变更。两条都不通时
+   * 只能靠宿主自己的 chokidar 兜底（下一次扫描才生效），因此只告警、不抛错。
+   *
+   * @param {string[]} paths 发生变更的绝对路径。
+   * @returns {Promise<{ invalidated: boolean, announced: boolean }>} 两条通道的结果。
+   */
+  const notifyMutation = async (paths) => {
+    const list = Array.isArray(paths) ? paths.filter((entry) => typeof entry === 'string' && entry !== '') : []
+    let invalidated = false
+    try {
+      const skills = getSkills()
+      if (skills !== undefined && skills !== null && typeof skills.invalidateCache === 'function') {
+        skills.invalidateCache()
+        invalidated = true
+      } else {
+        logger.warn('[financial-skills] 技能注册表不可用（没有 invalidateCache），新装的技能要等宿主自己重扫')
+      }
+    } catch (error) {
+      logger.warn(`[financial-skills] 技能缓存失效失败：${error instanceof Error ? error.message : String(error)}`)
+    }
+
+    let announced = false
+    try {
+      if (ctx !== undefined && ctx !== null && typeof ctx.emit === 'function') {
+        for (const path of list) {
+          let target = path
+          if (ctx.fs !== undefined && ctx.fs !== null && typeof ctx.fs.resolve === 'function') {
+            const resolved = await ctx.fs.resolve(path)
+            if (typeof resolved === 'string' && resolved !== '') target = resolved
+          }
+          ctx.emit('fs/observed', target, { kind: 'present', version: String(Date.now()) }, { name: 'write' })
+          announced = true
+        }
+      }
+    } catch (error) {
+      logger.warn(`[financial-skills] fs/observed 广播失败：${error instanceof Error ? error.message : String(error)}`)
+    }
+    return { invalidated, announced }
   }
   const routes = createRoutes({
     catalog,
     store,
     config,
     getSkills,
+    notifyMutation,
     logger,
     version: readPackageVersion(),
   })

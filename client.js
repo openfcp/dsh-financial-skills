@@ -3,12 +3,14 @@
  *
  * 结构（自上而下）：
  *   侧栏一行（图标 + 「金融技能」标签）   —— 只是入口，不画文字/底色
- *   主区整页「金融行业skills精选」          —— 页头标题/副标题/数据源行
- *     ├─ 工具栏：官方 Input 搜索 + 官方 SegmentedControl（全部插件 / 已安装 n）
- *     ├─ 分类条：官方 Pill × 10（全部 + 9 类，带条数）
- *     ├─ 结果列表：48px 字形盒 + 名称 14/500 + 摘要 12/18 两行截断 + Tag 元信息 + 动作
+ *   主区整页「金融行业skills精选」
+ *     ├─ 头部 banner：内联 SVG 标识 + 标题 + slogan + 「N 个技能 · M 个分类」
+ *     ├─ 元信息一行：数据源 · 更新 ·「实时/非实时」+ 紧随其后的红色刷新按钮
+ *     ├─ 工具栏：官方 Input 搜索（左）+ 官方 SegmentedControl（全部插件 / 已安装 n，右）
+ *     ├─ 分割线 → 分类条：官方 Pill × 10（全部 + 9 类，带条数）
+ *     ├─ 技能卡片：一行一条长条卡，类别/来源/版本/协议为胶囊，作者/核验日期为纯文本
  *     ├─ 详情：官方 Modal + MarkdownText（安装/卸载/复制 SkillHub 命令/打开来源站）
- *     └─ 页脚：更新日期 · fetchedAt 相对时间 · 条数 · 刷新
+ *     └─ 页脚：更新日期 · fetchedAt 相对时间 · 条数 · 来源 Tag
  *
  * 视觉：只使用 DSH 官方设计 token（var(--dsw-*)）与官方 UI 原语
  * （@deepseek-ai/dsh-client-ui-primitives）；与官方插件页同一套栅格
@@ -69,9 +71,33 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__ !== undefined && ty
           'entry.label': '金融技能',
           'page.title': '金融行业skills精选',
           'page.subtitle': '为金融从业者策展的 AI 技能清单：按业务场景分类，标注能力边界与来源。',
+          'hero.slogan': '按业务场景策展的金融 AI 技能库',
+          'hero.badge': '{categories} 个分类 · {count} 个技能',
           'page.sourcePrefix': '数据源',
           'page.sourceRepo': 'openfcp/awesome-financial-skills',
           'page.updated': '更新 {date}',
+          'meta.stale': '非实时',
+          'meta.live': '实时',
+          'meta.refreshing': '刷新中…',
+          'field.category': '类别',
+          'field.version': '版本',
+          'field.source': '来源',
+          'field.license': '协议',
+          'field.author': '作者',
+          'field.verifiedAt': '核验日期',
+          'field.invocation': '调用名',
+          'field.unknown': '未标注',
+          'card.detail': '详情',
+          'card.install': '安装',
+          'card.installing': '安装中…',
+          'card.uninstall': '卸载',
+          'card.uninstalling': '卸载中…',
+          'card.installed': '已安装',
+          'card.openAria': '查看 {name} 详情',
+          'card.noSummary': '暂无摘要',
+          'card.invocationHint': '在技能列表里用这个名字调用',
+          'card.invocationUnknown': '调用名未记录，重装一次即可补全',
+          'card.invocationDiffers': '调用名与技能 id 不同，在技能列表里按「{name}」查找',
           'search.label': '搜索插件',
           'search.placeholder': '搜索名称、摘要、标签或作者',
           'filter.viewLabel': '视图',
@@ -155,9 +181,33 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__ !== undefined && ty
           'entry.label': 'Financial Skills',
           'page.title': 'Curated Financial Skills',
           'page.subtitle': 'A curated AI skill catalog for financial professionals — organized by business scenario, with capability boundaries and provenance made explicit.',
+          'hero.slogan': 'A curator-built skill library for financial work',
+          'hero.badge': '{categories} categories · {count} skills',
           'page.sourcePrefix': 'Data source',
           'page.sourceRepo': 'openfcp/awesome-financial-skills',
           'page.updated': 'Updated {date}',
+          'meta.stale': 'Not live',
+          'meta.live': 'Live',
+          'meta.refreshing': 'Refreshing…',
+          'field.category': 'Category',
+          'field.version': 'Version',
+          'field.source': 'Source',
+          'field.license': 'License',
+          'field.author': 'Author',
+          'field.verifiedAt': 'Verified',
+          'field.invocation': 'Invoke as',
+          'field.unknown': 'Not stated',
+          'card.detail': 'Details',
+          'card.install': 'Install',
+          'card.installing': 'Installing…',
+          'card.uninstall': 'Uninstall',
+          'card.uninstalling': 'Uninstalling…',
+          'card.installed': 'Installed',
+          'card.openAria': 'View {name} details',
+          'card.noSummary': 'No summary yet',
+          'card.invocationHint': 'Call it by this name in the skill list',
+          'card.invocationUnknown': 'Invocation name not recorded — reinstall once to fill it in',
+          'card.invocationDiffers': 'Invocation name differs from the skill id — look for "{name}" in the skill list',
           'search.label': 'Search skills',
           'search.placeholder': 'Search name, summary, tag or author',
           'filter.viewLabel': 'View',
@@ -446,14 +496,6 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__ !== undefined && ty
         return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
       }
 
-      /** 48px 字形盒里的首字（不加载任何第三方图片）。 */
-      function skillInitial(skill, lang) {
-        const name = pickLocalized(skill !== null && skill !== undefined ? skill.name : undefined, lang)
-        const source = name !== '' ? name : skill !== null && skill !== undefined && typeof skill.id === 'string' ? skill.id : '?'
-        const chars = Array.from(source)
-        return chars.length > 0 ? chars[0].toUpperCase() : '?'
-      }
-
       /** 分类 id → 本地化分类名（找不到时回退 id 本身，不隐藏分类）。 */
       function categoryTitle(categories, id, lang) {
         const list = Array.isArray(categories) ? categories : []
@@ -555,31 +597,86 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__ !== undefined && ty
       //#region 样式（只用官方 token；颜色/圆角/边框全部走 var(--dsw-*)）
       const CSS = `
 .fs-view{box-sizing:border-box;display:flex;flex-direction:column;min-width:0;height:100%;min-height:0}
-.fs-page{box-sizing:border-box;display:flex;flex-direction:column;align-items:center;gap:32px;height:100%;min-height:0;padding:0 clamp(24px,4vw,48px) 48px;overflow:hidden auto;color:var(--dsw-alias-label-primary)}
-.fs-pageHead{box-sizing:border-box;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;width:100%;max-width:960px;padding-top:28px}
-.fs-headMain{min-width:0}
-.fs-title{margin:0;font-size:20px;font-weight:500;line-height:28px}
-.fs-intro{margin:4px 0 0;font-size:13px;line-height:20px;color:var(--dsw-alias-label-secondary)}
-.fs-sourceLine{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:8px 0 0;font-size:12px;line-height:18px;color:var(--dsw-alias-label-tertiary)}
-.fs-content{display:flex;flex-direction:column;gap:24px;width:100%;max-width:960px;min-width:0}
-.fs-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
-.fs-searchField{flex:1 1 240px;min-width:0;max-width:320px}
+.fs-page{box-sizing:border-box;display:flex;flex-direction:column;align-items:center;gap:20px;height:100%;min-height:0;padding:0 clamp(20px,3vw,40px) 40px;overflow:hidden auto;color:var(--dsw-alias-label-primary)}
+.fs-shell{display:flex;flex-direction:column;gap:18px;width:100%;max-width:1120px;padding-top:20px}
+
+/* 头部 banner：内联 SVG 标识 + 标题 + slogan，右侧一枚统计胶囊 */
+.fs-hero{position:relative;display:flex;align-items:center;gap:16px;min-width:0;padding:22px 24px;overflow:hidden;border:.5px solid var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-xl);background:var(--dsw-alias-bg-layer-1)}
+/* 标识：灰白色调的四块带凸榫圆角方，颜色全部由 currentColor + 透明度推出，亮/暗主题自动跟随 */
+.fs-heroMark{position:relative;display:inline-flex;flex:none;align-items:center;justify-content:center;width:44px;height:44px;border:.5px solid var(--dsw-alias-border-l3);border-radius:var(--dsw-radius-lg);background:var(--dsw-alias-bg-layer-2);color:var(--dsw-alias-label-secondary)}
+.fs-heroMain{display:flex;flex-direction:column;gap:2px;min-width:0}
+.fs-heroTitle{margin:0;font-size:19px;font-weight:600;line-height:26px;letter-spacing:.2px}
+.fs-heroSlogan{margin:0;font-size:12.5px;line-height:18px;color:var(--dsw-alias-label-secondary)}
+.fs-heroSpacer{flex:1}
+/* 统计胶囊：分类在前、技能条数在后，数字随目录实时变化（tabular-nums 让宽度不跳动） */
+.fs-heroBadge{flex:none;padding:5px 12px;border:.5px solid var(--dsw-alias-border-l2);border-radius:999px;color:var(--dsw-alias-label-secondary);font-size:13px;line-height:18px;font-weight:500;letter-spacing:.2px;font-variant-numeric:tabular-nums;white-space:nowrap}
+
+/* 一行元信息：数据源 · 更新 · 「实时/非实时」+ 紧贴其右的全页唯一红色刷新按钮 */
+.fs-metaRow{display:flex;flex-wrap:wrap;align-items:center;gap:10px;min-width:0;font-size:12px;line-height:18px;color:var(--dsw-alias-label-tertiary)}
+.fs-metaItem{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.fs-metaKey{color:var(--dsw-alias-label-caption)}
+.fs-metaVal{color:var(--dsw-alias-label-secondary);font-variant-numeric:tabular-nums}
+.fs-metaDot{color:var(--dsw-alias-border-l3)}
+
+/* 刷新：浅红底 + 红字 + 红描边的胶囊，落在「实时 / 非实时」右手边，是全页唯一的主行动。
+   用浅色而非实心大红：整页只有这一个彩色元素，已经足够醒目，实心红反而抢掉内容的注意力。 */
+.fs-refresh{display:inline-flex;align-items:center;gap:5px;height:26px;padding:0 11px;
+  border:1px solid color-mix(in srgb,var(--dsw-alias-state-error-primary) 45%,transparent);border-radius:999px;
+  background:color-mix(in srgb,var(--dsw-alias-state-error-primary) 10%,transparent);
+  color:var(--dsw-alias-state-error-primary);
+  font:inherit;font-size:12.5px;font-weight:500;line-height:24px;white-space:nowrap;cursor:pointer;
+  transition:background-color var(--ds-transition-duration,.2s) var(--ds-ease-in-out,ease-in-out),border-color var(--ds-transition-duration,.2s) var(--ds-ease-in-out,ease-in-out)}
+.fs-refresh:hover{background:color-mix(in srgb,var(--dsw-alias-state-error-primary) 18%,transparent);border-color:color-mix(in srgb,var(--dsw-alias-state-error-primary) 68%,transparent)}
+.fs-refresh:active{background:color-mix(in srgb,var(--dsw-alias-state-error-primary) 24%,transparent)}
+.fs-refresh:disabled{cursor:progress;color:color-mix(in srgb,var(--dsw-alias-state-error-primary) 70%,transparent);border-color:color-mix(in srgb,var(--dsw-alias-state-error-primary) 30%,transparent)}
+.fs-refresh:focus-visible{outline:2px solid var(--dsw-alias-state-error-primary);outline-offset:2px}
+.fs-refreshIcon{display:inline-flex;flex:none;align-items:center}
+
+/* 搜索（左）+ 视图切换（右） */
+.fs-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:12px;min-width:0}
+.fs-searchField{flex:0 1 360px;min-width:200px;max-width:360px}
 .fs-toolbarSpacer{flex:1}
+.fs-divider{height:0;margin:0;border:0;border-top:.5px solid var(--dsw-alias-border-l2)}
+
+/* 分类胶囊 */
 .fs-categoryBar{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
-.fs-panelBody{display:flex;flex-direction:column;gap:24px;min-width:0}
 .fs-pillCount{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-caption);font-size:12px;line-height:18px}
-.fs-list{display:flex;flex-direction:column;gap:2px;margin:0;padding:0;list-style:none}
-.fs-row{border-radius:var(--dsw-radius-xl);margin:0 -8px;min-width:0;transition:background-color var(--ds-transition-duration,.2s) var(--ds-ease-in-out,ease-in-out)}
-.fs-row:hover{background:var(--dsw-alias-interactive-bg-hover)}
-.fs-rowHead{display:flex;align-items:center;gap:14px;padding:8px}
-.fs-rowIcon{display:inline-flex;flex:none;align-items:center;justify-content:center;width:48px;height:48px;border:.5px solid var(--dsw-alias-border-l3);border-radius:var(--dsw-radius-lg);color:var(--dsw-alias-label-secondary);font-size:18px;font-weight:500;line-height:1;overflow:hidden}
-.fs-rowMain{display:flex;flex:1;flex-direction:column;gap:4px;min-width:0}
-.fs-rowTitleRow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;min-width:0}
-.fs-rowOpen{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border:0;background:0 0;color:inherit;font:inherit;font-size:14px;font-weight:500;line-height:20px;text-align:left;cursor:pointer}
-.fs-rowOpen:hover{text-decoration:underline;text-underline-offset:3px}
-.fs-rowSummary{display:-webkit-box;overflow:hidden;-webkit-box-orient:vertical;-webkit-line-clamp:2;color:var(--dsw-alias-label-tertiary);font-size:12px;line-height:18px}
-.fs-rowMeta{display:flex;flex-wrap:wrap;align-items:center;gap:6px;min-width:0}
-.fs-rowEnd{display:inline-flex;flex:none;align-items:center;gap:8px}
+.fs-panelBody{display:flex;flex-direction:column;gap:14px;min-width:0}
+
+/* 技能卡片：一行一条长条卡，自上而下依次排列（不是多列网格） */
+.fs-grid{display:flex;flex-direction:column;gap:10px;margin:0;padding:0;list-style:none}
+.fs-card{box-sizing:border-box;display:flex;align-items:center;gap:16px;min-width:0;padding:12px 14px 12px 16px;border:1px solid var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-xl);background:var(--dsw-alias-bg-layer-1);transition:border-color var(--ds-transition-duration,.2s) var(--ds-ease-in-out,ease-in-out),background-color var(--ds-transition-duration,.2s) var(--ds-ease-in-out,ease-in-out)}
+.fs-card:hover{border-color:var(--dsw-alias-border-l3);background:var(--dsw-alias-bg-layer-2)}
+.fs-card[data-installed="true"]{border-color:var(--dsw-alias-state-success-primary)}
+.fs-card[data-installed="true"]:hover{border-color:var(--dsw-alias-state-success-primary)}
+.fs-cardMain{display:flex;flex:1;flex-direction:column;gap:5px;min-width:0}
+.fs-cardHead{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 8px;min-width:0}
+.fs-cardName{min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border:0;background:0 0;color:inherit;font:inherit;font-size:14.5px;font-weight:600;line-height:21px;text-align:left;cursor:pointer;padding:0}
+.fs-cardName:hover{text-decoration:underline;text-underline-offset:3px}
+.fs-cardNameEn{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary);font-size:11.5px;line-height:16px}
+.fs-cardSummary{display:-webkit-box;overflow:hidden;-webkit-box-orient:vertical;-webkit-line-clamp:1;margin:0;color:var(--dsw-alias-label-tertiary);font-size:12px;line-height:18px}
+/* 类别 / 来源 / 版本 / 协议 → 胶囊；作者 / 核验日期 → 卡片右上角纯文本（与中英名同一行）。
+   两项各自是「键 + 定宽值列（10ch）」的两列网格，所以整块的宽度对所有卡片都一样：
+   姓名长短只影响名称那一侧，作者列与日期列在纵向上一一对齐，右边缘也齐。 */
+.fs-cardMeta{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin:0;min-width:0}
+.fs-cardChips{display:inline-flex;flex-wrap:wrap;align-items:center;gap:6px;min-width:0}
+.fs-cardFacts{display:inline-flex;flex:none;align-items:baseline;gap:0 14px;min-width:0;margin-left:auto;font-size:11.5px;line-height:16px;color:var(--dsw-alias-label-tertiary)}
+.fs-cardFact{display:grid;grid-template-columns:max-content 10ch;align-items:baseline;gap:0 4px;min-width:0}
+.fs-cardFactKey{color:var(--dsw-alias-label-caption);white-space:nowrap}
+.fs-cardFactVal{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-secondary);font-variant-numeric:tabular-nums}
+.fs-cardInvoke{display:flex;align-items:center;gap:6px;min-width:0;font-size:11.5px;line-height:16px;color:var(--dsw-alias-state-success-primary)}
+.fs-cardInvokeCode{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--ds-font-family-code,ui-monospace,monospace);font-size:11.5px}
+.fs-cardInvokeMuted{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary);font-size:11.5px;line-height:16px}
+.fs-cardActions{display:flex;flex:none;align-items:center;gap:6px}
+/* 窄容器：长条卡改为上下两段（信息在上、动作在下），不挤成一坨；banner 统计胶囊换到第二行 */
+@media (max-width:720px){
+  .fs-card{flex-direction:column;align-items:stretch;gap:10px}
+  .fs-cardActions{justify-content:flex-end}
+  .fs-hero{flex-wrap:wrap}
+  .fs-heroSpacer{display:none}
+}
+
+/* 状态 / 提示 */
 .fs-state{display:flex;flex-direction:column;align-items:center;gap:12px;padding:40px 16px;text-align:center}
 .fs-stateText{margin:0;font-size:13px;line-height:20px;color:var(--dsw-alias-label-tertiary)}
 .fs-stateIcon{color:var(--dsw-alias-label-caption)}
@@ -588,13 +685,16 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__ !== undefined && ty
 .fs-notice{margin:0;font-size:12px;line-height:18px;color:var(--dsw-alias-state-warn-primary);overflow-wrap:anywhere}
 .fs-noticeRow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;min-width:0}
 .fs-noticeOk{margin:0;font-size:12px;line-height:18px;color:var(--dsw-alias-state-success-primary);overflow-wrap:anywhere}
-.fs-skeletons{display:flex;flex-direction:column;gap:2px;width:100%}
-.fs-skeletonRow{display:flex;align-items:center;gap:14px;padding:8px}
-.fs-skeletonIcon{width:48px;height:48px;border-radius:var(--dsw-radius-lg);background:var(--dsw-alias-bg-skeleton)}
-.fs-skeletonLines{flex:1;height:40px;border-radius:var(--dsw-radius-md);background:var(--dsw-alias-bg-skeleton)}
+.fs-notices{display:flex;flex-direction:column;gap:8px}
+.fs-skeletons{display:flex;flex-direction:column;gap:12px;width:100%}
+.fs-skeletonGrid{display:flex;flex-direction:column;gap:10px}
+.fs-skeletonCard{height:78px;border:.5px solid var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-xl);background:var(--dsw-alias-bg-skeleton)}
+
+/* 页脚（只留更新日期一览：更新日期 · 相对时间 · 条数 · 来源） */
 .fs-footer{display:flex;flex-wrap:wrap;align-items:center;gap:12px;width:100%;padding:8px 0 4px;border-top:.5px solid var(--dsw-alias-border-l2)}
 .fs-footerText{margin:0;font-size:12px;line-height:18px;color:var(--dsw-alias-label-tertiary);font-variant-numeric:tabular-nums}
-.fs-footerSpacer{flex:1}
+
+/* 详情弹窗 */
 .fs-detail{width:min(720px,100%);max-height:min(760px,100%)}
 .fs-detailContent{min-height:0;overflow-y:auto}
 .fs-detailMeta{display:grid;grid-template-columns:max-content 1fr;gap:4px 16px;margin:0 0 16px;padding:0 0 16px;border-bottom:.5px solid var(--dsw-alias-border-l2);font-size:13px;line-height:20px}
@@ -663,69 +763,154 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__ !== undefined && ty
       }
       //#endregion
 
-      //#region 列表行
+      //#region 列表卡片
       /**
-       * 一条技能行：左 48px 字形盒（首字，不加载图片），中间名称 + 两行摘要 + Tag 元信息，
-       * 右侧官方 Button（未装 primary 安装 / 已装 ghost 卸载 + 详情）。点名称开详情 Modal。
+       * 一条技能的元信息项。
+       *
+       * 固定六项，两类展示：`capsule: true` 的（类别 / 来源 / 版本 / 协议）画成胶囊，
+       * `capsule: false` 的（作者 / 核验日期）直接写纯文本。缺值统一「未标注」，
+       * 不做隐藏——读者需要判断是上游没写，还是界面没显示。
+       *
+       * @param {object} skill 归一化技能
+       * @param {{ categoryTitle: string, sourceLabel: string, lang: string }} context 展示上下文
+       * @returns {Array<{ key: string, value: string, capsule: boolean }>} 六项元信息
        */
-      function SkillRow(props) {
+      function skillFieldPairs(skill, context) {
+        const license = typeof skill.license === 'string' && skill.license !== ''
+          ? (skill.license === 'proprietary' ? tt('license.proprietary') : skill.license)
+          : tt('field.unknown')
+        const author = typeof skill.author === 'string' && skill.author !== '' ? skill.author : tt('field.unknown')
+        const version = typeof skill.version === 'string' && skill.version !== '' ? skill.version : tt('field.unknown')
+        const verifiedAt = typeof skill.verifiedAt === 'string' && skill.verifiedAt !== '' ? skill.verifiedAt : tt('field.unknown')
+        return [
+          { key: 'field.category', value: context.categoryTitle, capsule: true },
+          { key: 'field.source', value: context.sourceLabel, capsule: true },
+          { key: 'field.version', value: version, capsule: true },
+          { key: 'field.license', value: license, capsule: true },
+          { key: 'field.author', value: author, capsule: false },
+          { key: 'field.verifiedAt', value: verifiedAt, capsule: false },
+        ]
+      }
+
+      /** 卡片上的英文名：与中文名相同（上游只给一个名字）时不重复显示。 */
+      function secondaryName(skill, lang) {
+        const name = skill !== null && skill !== undefined ? skill.name : undefined
+        if (name === null || name === undefined || typeof name !== 'object') return ''
+        const primary = pickLocalized(name, lang)
+        const other = lang === 'en' ? name.zh : name.en
+        if (typeof other !== 'string' || other === '' || other === primary) return ''
+        return other
+      }
+
+      /** 已安装技能在技能列表里的调用名（来自 SKILL.md frontmatter）。 */
+      function invocationNameOf(skill) {
+        if (skill === null || skill === undefined) return ''
+        if (typeof skill.installedInvocationName === 'string' && skill.installedInvocationName !== '') return skill.installedInvocationName
+        return ''
+      }
+
+      /**
+       * 一张技能长条卡：一行一条，自上而下排列。
+       *
+       * 左段（弹性）：第一行中文名 + 英文名，行尾右上角是作者与核验日期（纯文本）；
+       * 第二行一行摘要；第三行类别/来源/版本/协议四枚胶囊。右段（定宽）：详情 / 安装 / 卸载 动作。
+       *
+       * 已安装的卡片换一种外边框颜色（`data-installed`），并把调用名亮出来——
+       * 技能列表里按的是 frontmatter 的 name，常常和目录 id 不一样。
+       */
+      function SkillCard(props) {
         const skill = props.skill
         const lang = props.lang
         const busy = props.busy
         const installed = skill.installed === true
-        const rowBusy = busy !== undefined && busy !== null && busy.id === skill.id
-        const installing = rowBusy && busy.kind === 'install'
-        const uninstalling = rowBusy && busy.kind === 'uninstall'
+        const cardBusy = busy !== undefined && busy !== null && busy.id === skill.id
+        const installing = cardBusy && busy.kind === 'install'
+        const uninstalling = cardBusy && busy.kind === 'uninstall'
         const displayName = pickLocalized(skill.name, lang) || skill.id
+        const secondary = secondaryName(skill, lang)
         const summary = pickLocalized(skill.summary, lang)
         const sourceType = skill.source !== null && skill.source !== undefined ? skill.source.type : undefined
         const sourceLabel = tt(sourceType === 'github' ? 'source.github' : sourceType === 'skillhub' ? 'source.skillhub' : 'source.other')
-        const version = typeof skill.version === 'string' && skill.version !== '' ? skill.version : ''
-        const metaTags = [
-          h(P.Tag, { key: 'category', tone: 'outline' }, props.categoryTitle),
-          version !== '' ? h(P.Tag, { key: 'version', tone: 'outline' }, 'v' + version) : null,
-          h(P.Tag, { key: 'source', tone: 'outline' }, sourceLabel),
-          installed ? h(P.Tag, { key: 'installed', tone: 'success' }, tt('row.installed')) : null,
-        ].filter((node) => node !== null)
+        const pairs = skillFieldPairs(skill, { categoryTitle: props.categoryTitle, sourceLabel, lang })
+        const invocation = invocationNameOf(skill)
 
-        return h('li', { className: 'fs-row', 'data-dsh-part': 'skill-row', 'data-skill': skill.id },
-          h('div', { className: 'fs-rowHead' },
-            h('span', { className: 'fs-rowIcon', 'aria-hidden': 'true' }, skillInitial(skill, lang)),
-            h('div', { className: 'fs-rowMain' },
-              h('div', { className: 'fs-rowTitleRow' },
-                h('button', {
-                  type: 'button',
-                  className: 'fs-rowOpen',
-                  'aria-label': tt('row.openAria', { name: displayName }),
-                  onClick: props.onOpen,
-                }, displayName),
-              ),
-              h('span', {
-                className: 'fs-rowSummary',
-                title: summary !== '' ? summary : undefined,
-              }, summary !== '' ? summary : tt('row.noSummary')),
-              h('div', { className: 'fs-rowMeta' }, metaTags),
-            ),
-            h('div', { className: 'fs-rowEnd' },
-              h(P.Button, {
-                size: 'sm',
-                variant: 'ghost',
+        return h('li', {
+          className: 'fs-card',
+          'data-dsh-part': 'skill-card',
+          'data-skill': skill.id,
+          'data-installed': installed ? 'true' : 'false',
+        },
+          h('div', { className: 'fs-cardMain' },
+            h('div', { className: 'fs-cardHead', 'data-dsh-part': 'card-head' },
+              h('button', {
+                type: 'button',
+                className: 'fs-cardName',
+                'aria-label': tt('card.openAria', { name: displayName }),
                 onClick: props.onOpen,
-              }, tt('row.detail')),
-              installed
-                ? h(P.Button, {
-                  size: 'sm',
-                  variant: 'ghost',
-                  disabled: rowBusy,
-                  onClick: props.onUninstall,
-                }, uninstalling ? tt('row.uninstalling') : tt('row.uninstall'))
-                : h(P.Button, {
-                  size: 'sm',
-                  variant: 'primary',
-                  disabled: rowBusy,
-                  onClick: props.onInstall,
-                }, installing ? tt('row.installing') : tt('row.install')),
+              }, displayName),
+              secondary !== '' ? h('span', { className: 'fs-cardNameEn' }, secondary) : null,
+              // 作者 / 核验日期 → 与中英名同一行的右上角（margin-left:auto 顶到最右；窄屏自动换行）
+              h('span', { className: 'fs-cardFacts', 'data-dsh-part': 'card-facts' },
+                pairs.filter((pair) => !pair.capsule).map((pair) => h('span', {
+                  className: 'fs-cardFact',
+                  key: pair.key,
+                  'data-field': pair.key,
+                },
+                  h('span', { className: 'fs-cardFactKey' }, tt(pair.key)),
+                  h('span', { className: 'fs-cardFactVal', title: pair.value }, pair.value),
+                ))),
             ),
+            h('p', { className: 'fs-cardSummary', title: summary !== '' ? summary : undefined },
+              summary !== '' ? summary : tt('card.noSummary'),
+            ),
+            h('div', { className: 'fs-cardMeta', 'data-dsh-part': 'card-meta' },
+              // 类别 / 来源 / 版本 / 协议 → 胶囊
+              h('span', { className: 'fs-cardChips', 'data-dsh-part': 'card-chips' },
+                pairs.filter((pair) => pair.capsule).map((pair) => h(P.Tag, {
+                  key: pair.key,
+                  tone: 'outline',
+                  'data-field': pair.key,
+                }, pair.value))),
+            ),
+            // 已安装：「已安装」标签落在这行最前面，紧跟着才是调用名（标签贴在标题旁会把名称挤短）
+            installed
+              ? h('p', {
+                className: 'fs-cardInvoke',
+                'data-dsh-part': 'card-invocation',
+              },
+                h(P.Tag, { tone: 'success', key: 'tag', 'data-dsh-part': 'installed-tag' }, tt('card.installed')),
+                invocation !== ''
+                  ? h('span', {
+                    key: 'label',
+                    title: invocation !== skill.id ? tt('card.invocationDiffers', { name: invocation }) : tt('card.invocationHint'),
+                  }, tt('field.invocation'))
+                  : null,
+                invocation !== ''
+                  ? h('code', { key: 'code', className: 'fs-cardInvokeCode' }, invocation)
+                  : h('span', { key: 'unknown', className: 'fs-cardInvokeMuted' }, tt('card.invocationUnknown')),
+              )
+              : null,
+          ),
+          h('div', { className: 'fs-cardActions', 'data-dsh-part': 'card-actions' },
+            h(P.Button, {
+              size: 'sm',
+              variant: 'ghost',
+              onClick: props.onOpen,
+            }, tt('card.detail')),
+            installed
+              ? h(P.Button, {
+                size: 'sm',
+                // outline：卸载是「有边框的次级动作」，灰描边比 ghost 更明确是按钮
+                variant: 'outline',
+                disabled: cardBusy,
+                onClick: props.onUninstall,
+              }, uninstalling ? tt('card.uninstalling') : tt('card.uninstall'))
+              : h(P.Button, {
+                size: 'sm',
+                variant: 'primary',
+                disabled: cardBusy,
+                onClick: props.onInstall,
+              }, installing ? tt('card.installing') : tt('card.install')),
           ),
         )
       }
@@ -916,7 +1101,7 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__ !== undefined && ty
       //#region 主区页面
       /**
        * 主区整页：页头（标题/副标题/数据源行）→ 工具栏（搜索 + 视图切换）→
-       * 分类 Pill → 结果列表 → 页脚（更新/刷新/条数）。
+       * 分类 Pill → 长条卡片列表 → 页脚（更新/条数）。
        * 状态：初次加载骨架 + TextShimmer、错误重试、空结果、离线/快照明确标注。
        */
       function PanelPage(props) {
@@ -1004,6 +1189,23 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__ !== undefined && ty
         const metaSummary = useMemo(() => summarizeMeta(meta, Date.now(), lang), [meta, lang])
         const totalCount = decorated.length
 
+        /**
+         * 分类数：以目录声明的分类为准；目录没声明分类时退回「技能里实际出现过的分类」，
+         * 两种来源都跟着目录走，所以数字永远和当前清单一致，不写死。
+         */
+        const categoryCount = useMemo(() => {
+          if (categories.length > 0) return categories.length
+          const seen = {}
+          let count = 0
+          for (const skill of decorated) {
+            const key = typeof skill.category === 'string' ? skill.category : ''
+            if (key === '' || seen[key] === true) continue
+            seen[key] = true
+            count += 1
+          }
+          return count
+        }, [categories, decorated])
+
         /** 安装 / 卸载：串行（busy 期间忽略重复触发），成功后静默重取目录刷新 installed 标记。 */
         const runAction = async (id, kind) => {
           if (busy !== undefined || actionLock.current) return
@@ -1062,22 +1264,93 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__ !== undefined && ty
           )
         }
 
-        /** 页头：标题（20/28/500）+ 副标题（13/20 secondary）+ 数据源行（12/18 tertiary + 来源 Tag）。 */
-        const introText = pickLocalized(catalog !== undefined ? catalog.description : undefined, lang) || tt('page.subtitle')
-        const updated = catalog !== undefined && typeof catalog.updated === 'string' ? catalog.updated : ''
-        const head = h('header', { className: 'fs-pageHead', 'data-dsh-part': 'page-head' },
-          h('div', { className: 'fs-headMain' },
-            h('h1', { className: 'fs-title' }, tt('page.title')),
-            h('p', { className: 'fs-intro' }, introText),
-            h('p', { className: 'fs-sourceLine', 'data-dsh-part': 'source-line' },
-              h('span', { key: 'repo' }, tt('page.sourcePrefix') + ' ' + tt('page.sourceRepo')),
-              updated !== '' ? h('span', { key: 'updated' }, '· ' + tt('page.updated', { date: updated })) : null,
-              meta !== undefined ? h(P.Tag, { key: 'source', tone: metaSummary.tone }, tt(metaSummary.labelKey)) : null,
-            ),
+        /**
+         * 头部 banner：内联 SVG 标识（山花 + 檐口 + 立柱 + 地面线）+ 标题 + slogan + 右侧统计胶囊。
+         *
+         * 标识只用 currentColor 描边 / 半透明填充，颜色来自 token，因此明暗主题与黑白风格都成立；
+         * 不加载任何第三方图片（图标只有内联 SVG，bundle 里不存在 img 元素）。
+         */
+        /**
+         * 标识（灰白）：四块圆角方 + 各自的半圆凸榫，顺时针首尾相扣。
+         *
+         * 每块是「圆角方 + 一个圆心落在边上的圆」，圆只有一半露在外面 = 凸榫。
+         * 同一块内部两个图元放在同一个 `<g>` 里给整体 opacity——组内重叠不会二次加深，
+         * 组与组之间的 4 档透明度就是原图那套深浅层次。颜色只取 currentColor，不写死任何灰。
+         */
+        const heroMarkShape = (key, x, y, opacity, knobX, knobY) => h('g', { key, opacity },
+          h('rect', { key: 'r', x, y, width: 9.5, height: 9.5, rx: 3 }),
+          h('circle', { key: 'k', cx: knobX, cy: knobY, r: 1.9 }),
+        )
+        const heroMark = h('span', { className: 'fs-heroMark', key: 'mark' },
+          h('svg', {
+            viewBox: '0 0 24 24',
+            width: 22,
+            height: 22,
+            fill: 'currentColor',
+            'aria-hidden': 'true',
+          },
+            // 左上：凸榫朝右
+            heroMarkShape('tl', 1.3, 1.3, 0.9, 10.8, 6.05),
+            // 右上：凸榫朝下
+            heroMarkShape('tr', 13.2, 1.3, 0.62, 17.95, 10.8),
+            // 左下：凸榫朝上
+            heroMarkShape('bl', 1.3, 13.2, 0.38, 6.05, 13.2),
+            // 右下：凸榫朝左
+            heroMarkShape('br', 13.2, 13.2, 0.7, 13.2, 17.95),
+          ),
+        )
+        const hero = h('header', { className: 'fs-hero', 'data-dsh-part': 'hero' },
+          heroMark,
+          h('div', { className: 'fs-heroMain' },
+            h('h1', { className: 'fs-heroTitle' }, tt('page.title')),
+            h('p', { className: 'fs-heroSlogan' }, tt('hero.slogan')),
+          ),
+          h('span', { className: 'fs-heroSpacer' }),
+          // 条数用 tabular-nums：加载完成后胶囊宽度不跳动。
+          h('span', { className: 'fs-heroBadge', 'data-dsh-part': 'hero-badge' },
+            catalog === undefined
+              ? '—'
+              : tt('hero.badge', { categories: String(categoryCount), count: String(totalCount) }),
           ),
         )
 
-        /** 工具栏：官方 Input（搜索图标前置）+ 官方 SegmentedControl（全部插件 / 已安装 n）。 */
+        /**
+         * 一行元信息：数据源 · 更新 ·「实时 / 非实时」+ 紧贴其右的红色刷新按钮。
+         *
+         * 目录还没到手时日期位写「—」而不是整行消失，避免加载完成的瞬间版面上下一跳。
+         * 核验日期不在这行（改由每张卡片的元信息承载），一行只留三个信息位 + 一个动作。
+         */
+        const updated = catalog !== undefined && typeof catalog.updated === 'string' ? catalog.updated : ''
+        const placeholder = '—'
+        const metaRow = h('div', { className: 'fs-metaRow', 'data-dsh-part': 'meta-row' },
+          h('span', { className: 'fs-metaItem', key: 'source', 'data-dsh-part': 'source-line' },
+            h('span', { className: 'fs-metaKey' }, tt('page.sourcePrefix')),
+            h('span', { className: 'fs-metaVal' }, tt('page.sourceRepo')),
+          ),
+          h('span', { className: 'fs-metaDot', key: 'dot-updated', 'aria-hidden': 'true' }, '·'),
+          h('span', { className: 'fs-metaItem', key: 'updated', 'data-dsh-part': 'updated-line' },
+            h('span', { className: 'fs-metaVal' }, tt('page.updated', { date: updated !== '' ? updated : placeholder })),
+          ),
+          meta !== undefined
+            ? h(P.Tag, { key: 'freshness', tone: metaSummary.live ? 'info' : 'warning', 'data-dsh-part': 'freshness' }, tt(metaSummary.live ? 'meta.live' : 'meta.stale'))
+            : null,
+          // 刷新按钮就在「实时/非实时」右边：浅红底红字胶囊，全页唯一主行动。
+          h('button', {
+            key: 'refresh',
+            type: 'button',
+            className: 'fs-refresh',
+            'data-dsh-part': 'refresh-action',
+            disabled: refreshing,
+            'aria-label': tt('footer.refresh'),
+            onClick: () => { load('refresh') },
+          },
+            h('span', { className: 'fs-refreshIcon' },
+              h(P.IconRefreshOutlineRegular, { size: 14, className: refreshing ? 'fs-spin' : undefined })),
+            refreshing ? tt('meta.refreshing') : tt('footer.refresh'),
+          ),
+        )
+
+        /** 工具栏：官方 Input（搜索图标前置，左对齐）+ 官方 SegmentedControl（全部插件 / 已安装 n，右对齐）。 */
         const viewOptions = [
           { value: VIEW_ALL, label: tt('filter.all') },
           { value: VIEW_INSTALLED, label: tt('filter.installed') + ' (' + installedCount + ')' },
@@ -1097,6 +1370,7 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__ !== undefined && ty
               },
             }),
           ),
+          h('div', { className: 'fs-toolbarSpacer' }),
           h(P.SegmentedControl, {
             id: PANEL_ID + '-view',
             value: view,
@@ -1104,8 +1378,10 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__ !== undefined && ty
             label: tt('filter.viewLabel'),
             onChange: (next) => { setView(next) },
           }),
-          h('div', { className: 'fs-toolbarSpacer' }),
         )
+
+        /** 横分割线：之后才是「分类胶囊 + 卡片网格」的工作区。 */
+        const divider = h('hr', { className: 'fs-divider', 'data-dsh-part': 'divider' })
 
         /** 分类条：官方 Pill，「全部」+ 9 类，每枚带条数（0 条也显示，不隐藏分类）。 */
         const countBadge = (count) => h('span', { className: 'fs-pillCount' }, String(count))
@@ -1128,17 +1404,16 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__ !== undefined && ty
           }, pickLocalized(entry.title, lang) || entry.id, countBadge(counts.byCategory[entry.id] || 0))),
         ]
 
-        /** 首次加载：3 行骨架 + TextShimmer 状态文案（都带 data-dsh-part 锚点）。 */
+        /** 首次加载：状态文案 + 6 张卡片骨架（都带 data-dsh-part 锚点）。 */
         let contentBody
         if (loading && catalog === undefined) {
           contentBody = h('div', { className: 'fs-skeletons', 'data-dsh-part': 'loading', role: 'status' },
             h('div', { className: 'fs-state' },
               h(P.TextShimmer, { active: true, className: 'fs-stateText' }, tt('state.loading')),
             ),
-            [0, 1, 2].map((index) => h('div', { className: 'fs-skeletonRow', key: 's' + index, 'aria-hidden': 'true' },
-              h('span', { className: 'fs-skeletonIcon' }),
-              h('span', { className: 'fs-skeletonLines' }),
-            )),
+            h('div', { className: 'fs-skeletonGrid', 'aria-hidden': 'true' },
+              [0, 1, 2, 3, 4, 5].map((index) => h('div', { className: 'fs-skeletonCard', key: 's' + index })),
+            ),
           )
         } else if (error !== undefined && catalog === undefined) {
           contentBody = h('div', { className: 'fs-state', 'data-dsh-part': 'load-error' },
@@ -1177,7 +1452,7 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__ !== undefined && ty
             notices.push(h('p', { className: 'fs-noticeOk', 'data-dsh-part': 'action-ok', key: 'action-ok' }, notice.text))
           }
           contentBody = h(React.Fragment, null,
-            toolbar,
+            notices.length > 0 ? h('div', { className: 'fs-notices', 'data-dsh-part': 'notices' }, notices) : null,
             h('div', {
               id: PANEL_ID + '-view-' + view + '-panel',
               className: 'fs-panelBody',
@@ -1186,11 +1461,10 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__ !== undefined && ty
               'data-dsh-part': 'view-panel',
             },
               h('div', { className: 'fs-categoryBar', 'data-dsh-part': 'category-bar' }, categoryPills),
-              notices,
               visible.length === 0
                 ? emptyState()
-                : h('ul', { className: 'fs-list', 'data-dsh-part': 'skill-list' },
-                  visible.map((skill) => h(SkillRow, {
+                : h('ul', { className: 'fs-grid', 'data-dsh-part': 'skill-grid' },
+                  visible.map((skill) => h(SkillCard, {
                     key: skill.id,
                     skill,
                     lang,
@@ -1204,7 +1478,11 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__ !== undefined && ty
           )
         }
 
-        /** 页脚：更新日期 · fetchedAt 相对时间 · 条数 · 来源 Tag · 刷新按钮。 */
+        /**
+         * 页脚：只保留更新日期一览（更新日期 · 相对时间 · 条数 · 来源 Tag）。
+         *
+         * 刷新按钮已在元信息行「实时/非实时」右侧，这里不再放第二个同功能按钮。
+         */
         const footer = h('footer', { className: 'fs-footer', 'data-dsh-part': 'footer' },
           updated !== '' ? h('p', { className: 'fs-footerText' }, tt('page.updated', { date: updated })) : null,
           // 快照的 fetchedAt 是「本次从随包快照读取」的时刻而非上游抓取时刻，不说成「刚刚刷新」。
@@ -1218,14 +1496,6 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__ !== undefined && ty
               visible: String(visible.length),
             })),
           meta !== undefined ? h(P.Tag, { tone: metaSummary.tone }, tt(metaSummary.labelKey)) : null,
-          h('span', { className: 'fs-footerSpacer' }),
-          h(P.Button, {
-            size: 'sm',
-            variant: 'ghost',
-            disabled: refreshing,
-            icon: h(P.IconRefreshOutlineRegular, { size: 16, className: refreshing ? 'fs-spin' : undefined }),
-            onClick: () => { load('refresh') },
-          }, refreshing ? tt('footer.refreshing') : tt('footer.refresh')),
         )
 
         const detailSkill = detailId !== undefined ? decorated.find((skill) => skill.id === detailId) : undefined
@@ -1235,8 +1505,11 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__ !== undefined && ty
           'data-dsh-plugin': 'financial-skills',
         },
           h('section', { className: 'fs-page', 'data-dsh-part': 'page' },
-            head,
-            h('div', { className: 'fs-content', 'data-dsh-part': 'content' },
+            h('div', { className: 'fs-shell', 'data-dsh-part': 'shell' },
+              hero,
+              metaRow,
+              toolbar,
+              divider,
               contentBody,
               catalog !== undefined ? footer : null,
             ),
@@ -1320,6 +1593,9 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__ !== undefined && ty
         relativeTime,
         panelId,
         panelLabel,
+        skillFieldPairs,
+        secondaryName,
+        invocationNameOf,
       }
       return module.exports
     },

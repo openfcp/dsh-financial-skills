@@ -32,7 +32,7 @@
  *   --dsh <path>          dsh CLI               [DSH_CLI]        default the shipped app CLI
  *   --plugin-config <json> row config for the patch overlay  default {"offline":true}
  *   --fixture-skill <id>  skill id installed from the local GitHub fixture
- *                         [DSH_E2E_FIXTURE_SKILL] default official-source-qa
+ *                         [DSH_E2E_FIXTURE_SKILL] default dyz-gongwen-skills
  *   --fixture <dir>       local fixture repo root [DSH_FINANCIAL_SKILLS_FIXTURE]
  *                         default <home>/../fixture
  *   --attach <url>        skip boot; drive an already-running Host URL (with token)
@@ -80,8 +80,9 @@ const API = {
   health: '/api/financial-skills/health',
 }
 
-/** The committed upstream snapshot has 9 categories and 17 skills. */
-const EXPECTED = { categories: 9, skills: 17 }
+/** The committed snapshot is the source of truth for expected shapes (never a fixed count). */
+const SNAPSHOT = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'catalog.snapshot.json'), 'utf8'))
+const EXPECTED = { categories: SNAPSHOT.categories.length, skills: SNAPSHOT.skills.length }
 
 const ID_GRAMMAR = /^[a-z0-9][a-z0-9-]{0,63}$/
 const FIXTURE_ID_GRAMMAR = ID_GRAMMAR
@@ -282,7 +283,7 @@ function buildConfig(argv) {
   const port = Number(opts.port ?? env.DSH_E2E_PORT ?? 0)
   if (!Number.isInteger(port) || port < 0 || port > 65535) fail(`--port must be an integer 0..65535, got ${opts.port}`)
 
-  const fixtureSkill = opts['fixture-skill'] ?? env.DSH_E2E_FIXTURE_SKILL ?? 'official-source-qa'
+  const fixtureSkill = opts['fixture-skill'] ?? env.DSH_E2E_FIXTURE_SKILL ?? 'dyz-gongwen-skills'
   if (!FIXTURE_ID_GRAMMAR.test(fixtureSkill)) {
     fail(`--fixture-skill must match ${ID_GRAMMAR}, got ${JSON.stringify(fixtureSkill)}`)
   }
@@ -291,8 +292,9 @@ function buildConfig(argv) {
   )
 
   // Default: never hit the network. The catalog then comes from the packaged
-  // snapshot (still 9/17) and any GitHub-backed route comes from the local
-  // fixture repo; pass --plugin-config '{}' to exercise live defaults instead.
+  // snapshot (whatever the committed upstream version holds) and any
+  // GitHub-backed route comes from the local fixture repo; pass
+  // --plugin-config '{}' to exercise live defaults instead.
   let pluginConfig = { offline: true }
   if (opts['plugin-config'] !== undefined) {
     try {
@@ -993,7 +995,6 @@ async function runAgainstHost(cfg, report, { url, child, tail, facts, write }) {
         typeof skill.source.repo === 'string' &&
         skill.source.repo !== '' &&
         typeof skill.source.path === 'string' &&
-        skill.source.path !== '' &&
         typeof skill.source.ref === 'string' &&
         skill.source.ref !== '',
     )
@@ -1011,15 +1012,23 @@ async function runAgainstHost(cfg, report, { url, child, tail, facts, write }) {
     githubCoordsOk && skillhubCoordsOk,
     `github=${githubSkills.length} skillhub=${skillhubSkills.length}`,
   )
-  const vendoredEntry = skills.find((skill) => skill.id === 'official-source-qa')
-  judge.expect(
-    'catalogVendoredEntry',
-    vendoredEntry?.source?.type === 'github' &&
-      vendoredEntry.source.vendored === true &&
-      vendoredEntry.source.path === 'skills/official-source-qa',
-    `${vendoredEntry?.id ?? 'official-source-qa'}: path=${vendoredEntry?.source?.path} vendored=${vendoredEntry?.source?.vendored}`,
+  // Upstream format 3 now includes two extra github shapes: repo-root sources
+  // (`source.path: ""`) and `source.exclude` prefixes. Both must survive
+  // normalization instead of being rewritten or dropped.
+  const rootSkills = githubSkills.filter((skill) => skill.source.path === '')
+  const excludeSkills = githubSkills.filter(
+    (skill) => Array.isArray(skill.source.exclude) && skill.source.exclude.length > 0,
   )
-  info('sources', `github=${githubSkills.length} skillhub=${skillhubSkills.length}`)
+  const rawRoot = SNAPSHOT.skills.filter((skill) => skill.source?.type === 'github' && skill.source.path === '').length
+  const rawExclude = SNAPSHOT.skills.filter(
+    (skill) => skill.source?.type === 'github' && Array.isArray(skill.source.exclude) && skill.source.exclude.length > 0,
+  ).length
+  judge.expect(
+    'catalogRootAndExcludeSources',
+    rootSkills.length === rawRoot && excludeSkills.length === rawExclude,
+    `root=${rootSkills.length}/${rawRoot} exclude=${excludeSkills.length}/${rawExclude}`,
+  )
+  info('sources', `github=${githubSkills.length} skillhub=${skillhubSkills.length} root=${rootSkills.length} exclude=${excludeSkills.length}`)
 
   section('GET ' + API.installed)
   const installedResponse = await http(cfg, session, API.installed)

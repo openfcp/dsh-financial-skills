@@ -26,7 +26,7 @@ jobs:
         run: |
           node -e "JSON.parse(require('node:fs').readFileSync('package.json', 'utf8'))"
           node -e "JSON.parse(require('node:fs').readFileSync('catalog.snapshot.json', 'utf8'))"
-          for f in index.js client.js lib/*.js test/e2e-remote.mjs; do
+          for f in index.js client.js lib/*.js scripts/preview.mjs test/e2e-remote.mjs; do
             if [ ! -e "$f" ]; then
               echo "missing expected source file: $f" >&2
               exit 1
@@ -42,6 +42,14 @@ jobs:
             echo "sh -n $f"
             sh -n "$f"
           done
+
+      # docs/preview.html is generated from the panel CSS in client.js. If it
+      # drifts, the README screenshots stop matching reality — regenerate and
+      # commit instead of hand-editing.
+      - name: Preview page is up to date
+        run: |
+          node scripts/preview.mjs
+          git diff --exit-code -- docs/preview.html
 
       # Unit + half-contract tests. They must pass with no network access: the
       # host suite injects fake fetch/catalog fixtures and never calls GitHub.
