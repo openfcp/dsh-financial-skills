@@ -298,6 +298,11 @@ function byPart(tree, part) {
   return elements(tree, (node) => node.props !== undefined && node.props['data-dsh-part'] === part)
 }
 
+/** 渲染树里的技能卡片组件节点（组件不会在父树里展开，按函数名取）。 */
+function cardsOf(tree) {
+  return elements(tree, (node) => typeof node.type === 'function' && node.type.name === 'SkillCard')
+}
+
 /** 等异步 fetch / 状态回写落定。 */
 async function flush() {
   for (let i = 0; i < 3; i += 1) await new Promise((resolve) => setTimeout(resolve, 0))
@@ -328,6 +333,7 @@ function buildFixture() {
         ? { skillhubCommand: skill.install.skillhub }
         : {}),
       pluginPath: './plugins/' + skill.id,
+      verifiedAt: SNAPSHOT.verified_at,
       installed,
     }
     if (installed) {
@@ -341,6 +347,7 @@ function buildFixture() {
     catalog: {
       id: SNAPSHOT.id,
       updated: SNAPSHOT.updated,
+      verifiedAt: SNAPSHOT.verified_at,
       title: SNAPSHOT.title,
       description: SNAPSHOT.description,
       upstreamSite: UPSTREAM_SITE,
@@ -502,7 +509,11 @@ test('CSS：注入一次、幂等、带 data-plugin / data-plugin-css 守卫属�
     assert.equal(style.dataset.plugin, 'dsh-financial-skills')
     assert.equal(style.dataset.pluginCss, 'dsh-financial-skills/panel.css')
     assert.ok(style.textContent.includes('.fs-page'), 'CSS 必须含页面栅格类')
-    assert.ok(style.textContent.includes('.fs-title'), 'CSS 必须含标题类')
+    assert.ok(style.textContent.includes('.fs-heroTitle'), 'CSS 必须含 banner 标题类')
+    assert.ok(style.textContent.includes('.fs-card'), 'CSS 必须含技能卡片类')
+    // 卡片外边框：默认浅灰，已安装换另一色（用 success 语义色，暗色主题自动适配）
+    assert.ok(/\.fs-card\{[^}]*border:1px solid var\(--dsw-alias-border-l2\)/.test(style.textContent), '卡片默认浅灰外边框')
+    assert.ok(/\.fs-card\[data-installed="true"\]\{[^}]*border-color:var\(--dsw-alias-state-success-primary\)/.test(style.textContent), '已安装卡片换一种外边框色')
     assert.ok(style.textContent.includes('var(--dsw-alias-label-secondary)'), 'CSS 必须用官方文字 token')
 
     client.evaluateAgain()
@@ -781,7 +792,7 @@ test('panelId / panelLabel：id 固定、label 跟随 document.lang', async () =
 //#endregion
 
 //#region 5. 渲染页面：结构
-test('渲染：页头 / 搜索 / 视图切换 / 10 枚分类 Pill / 全量技能行 / 已安装计数', async () => {
+test('渲染：banner / 元信息一行 / 搜索+视图 / 分割线 / 10 枚分类 Pill / 全量技能卡片 / 已安装计数', async () => {
   await withClient({}, async (client) => {
     const mounted = mountComponents(client)
     const PanelPage = mounted.main.component
@@ -793,17 +804,30 @@ test('渲染：页头 / 搜索 / 视图切换 / 10 枚分类 Pill / 全量技能
     const tree = client.mini.render(PanelPage, { api: fake.api })
     const allText = texts(tree).join('\n')
 
-    assert.ok(allText.includes('金融行业skills精选'), '页面标题')
-    assert.ok(allText.includes('为金融从业者策展'), '副标题取目录 description')
-    assert.ok(allText.includes('数据源 openfcp/awesome-financial-skills'), '页头数据源行')
-    assert.ok(allText.includes('更新 ' + SNAPSHOT.updated), '页头更新日期')
-    assert.ok(allText.includes('本地缓存（非实时）'), 'cache 来源必须显式标注非实时')
-    assert.ok(allText.includes('当前展示本地缓存目录（非实时）'), 'cache 来源必须给出「非实时」说明行')
+    // 1. 头部 banner：标题 + slogan + 统计胶囊
+    const hero = byPart(tree, 'hero')
+    assert.equal(hero.length, 1, '必须有头部 banner')
+    const heroText = textOf(hero[0])
+    assert.ok(heroText.includes('金融行业skills精选'), 'banner 里是页面标题')
+    assert.ok(heroText.includes('按业务场景策展的金融 AI 技能库'), 'banner 里是 slogan')
+    assert.ok(heroText.includes(TOTAL_SKILLS + ' 个技能'), 'banner 右侧统计技能条数')
+    assert.ok(heroText.includes(fixture.catalog.categories.length + ' 个分类'), 'banner 右侧统计分类数')
 
-    const root = elements(tree, (node) => node.props !== undefined && node.props['data-dsh-financial-skills-view'] !== undefined)[0]
-    assert.ok(root !== undefined, '缺少 data-dsh-financial-skills-view 根节点')
-    assert.equal(root.props['data-dsh-plugin'], 'financial-skills')
+    // 2. 元信息一行：数据源 · 更新 · 核验 · 非实时 · 刷新
+    const metaRow = byPart(tree, 'meta-row')
+    assert.equal(metaRow.length, 1, '必须有元信息一行')
+    const metaText = textOf(metaRow[0])
+    assert.ok(metaText.includes('数据源'), '元信息行标出数据源')
+    assert.ok(metaText.includes('openfcp/awesome-financial-skills'))
+    assert.ok(metaText.includes('更新 ' + SNAPSHOT.updated), '元信息行给目录更新日期')
+    assert.ok(metaText.includes('核验 ' + SNAPSHOT.verified_at), '元信息行给最近核验日期')
+    assert.ok(metaText.includes('非实时'), 'cache 来源必须显式标注非实时')
+    assert.ok(metaText.includes('刷新'), '元信息行右侧是刷新按钮')
+    assert.equal(byPart(metaRow[0], 'refresh-action').length, 1, '刷新按钮放在元信息行内')
 
+    // 3. 搜索（左）+ 视图切换（右）：分割线前
+    const toolbar = byPart(tree, 'toolbar')
+    assert.equal(toolbar.length, 1)
     const inputs = elements(tree, (node) => node.type === client.primitives.Input)
     assert.equal(inputs.length, 1)
     assert.equal(inputs[0].props.type, 'search')
@@ -821,12 +845,26 @@ test('渲染：页头 / 搜索 / 视图切换 / 10 枚分类 Pill / 全量技能
     assert.equal(segmented[0].props.value, 'all')
     assert.equal(segmented[0].props.label, '视图')
 
-    // SegmentedControl 的 aria-controls 指向真正存在的 tabpanel
-    const viewPanel = byPart(tree, 'view-panel')
-    assert.equal(viewPanel.length, 1)
-    assert.equal(viewPanel[0].props.id, PANEL_ID + '-view-all-panel')
-    assert.equal(viewPanel[0].props.role, 'tabpanel')
-    assert.equal(viewPanel[0].props['aria-labelledby'], PANEL_ID + '-view-all')
+    // 顺序：banner → 元信息 → 工具栏 → 分割线 → 分类条 → 卡片网格
+    const shell = byPart(tree, 'shell')[0]
+    const order = shell.children
+      .filter((node) => node !== null && node !== undefined && node.props !== undefined && typeof node.props['data-dsh-part'] === 'string')
+      .map((node) => node.props['data-dsh-part'])
+    assert.deepEqual(order.slice(0, 4), ['hero', 'meta-row', 'toolbar', 'divider'], '分割线必须紧跟在搜索/视图之后')
+    assert.equal(byPart(tree, 'divider').length, 1, '必须有一条横分割线')
+    assert.equal(byPart(tree, 'divider')[0].type, 'hr')
+
+    // 4. 分割线之后：分类胶囊，再是卡片网格
+    const panel = byPart(tree, 'view-panel')[0]
+    const panelOrder = panel.children
+      .filter((node) => node !== null && node !== undefined && node.props !== undefined && typeof node.props['data-dsh-part'] === 'string')
+      .map((node) => node.props['data-dsh-part'])
+    assert.equal(panelOrder[0], 'category-bar', '胶囊分类在卡片之前')
+    assert.equal(panelOrder[1], 'skill-grid', '胶囊分类下面是卡片网格')
+    assert.equal(byPart(tree, 'view-panel').length, 1)
+    assert.equal(panel.props.id, PANEL_ID + '-view-all-panel')
+    assert.equal(panel.props.role, 'tabpanel')
+    assert.equal(panel.props['aria-labelledby'], PANEL_ID + '-view-all')
 
     const pills = elements(tree, (node) => node.type === client.primitives.Pill)
     assert.equal(pills.length, 10, '「全部」+ 9 个分类 Pill')
@@ -838,26 +876,32 @@ test('渲染：页头 / 搜索 / 视图切换 / 10 枚分类 Pill / 全量技能
     assert.ok(textOf(consumerPill).includes(String(countOf('consumer-protection'))))
     assert.equal(pills.filter((pill) => pill.props.active === true).length, 1, '同时只有一枚分类 Pill 选中')
 
-    const rows = elements(tree, (node) => typeof node.type === 'function' && node.type.name === 'SkillRow')
-    assert.equal(rows.length, TOTAL_SKILLS, '技能行数量与快照一致')
-    assert.equal(elements(tree, (node) => node.props !== undefined && node.props['data-dsh-part'] === 'skill-row').length, 0, 'SkillRow 是组件节点，应由组件内部渲染 li')
-    const installedRows = rows.filter((row) => row.props.skill.installed === true)
-    assert.equal(installedRows.length, 2)
-    const installedRowTree = client.mini.render(installedRows[0].type, installedRows[0].props)
-    const successTags = elements(installedRowTree, (node) => node.type === client.primitives.Tag && node.props.tone === 'success')
-    assert.equal(successTags.length, 1, '已安装行要带 success Tag')
+    // 5. 卡片：全量、已安装的换外边框
+    const cards = cardsOf(tree)
+    assert.equal(cards.length, TOTAL_SKILLS, '技能卡片数量与快照一致')
+    assert.equal(byPart(tree, 'skill-card').length, 0, 'SkillCard 是组件节点，应由组件内部渲染 li')
+    const installedCards = cards.filter((card) => card.props.skill.installed === true)
+    assert.equal(installedCards.length, 2)
+    const installedCardTree = client.mini.render(installedCards[0].type, installedCards[0].props)
+    assert.equal(installedCardTree.props.className, 'fs-card')
+    assert.equal(installedCardTree.props['data-installed'], 'true', '已安装卡片换另一种外边框色')
+    const pendingCardTree = client.mini.render(cards.filter((card) => card.props.skill.installed !== true)[0].type, cards.filter((card) => card.props.skill.installed !== true)[0].props)
+    assert.equal(pendingCardTree.props['data-installed'], 'false')
+    const successTags = elements(installedCardTree, (node) => node.type === client.primitives.Tag && node.props.tone === 'success')
+    assert.equal(successTags.length, 1, '已安装卡片要带 success Tag')
     assert.equal(textOf(successTags[0]), '已安装')
 
-    const list = byPart(tree, 'skill-list')
-    assert.equal(list.length, 1)
+    // 6. 页脚（保持原样）
     const footerCounts = byPart(tree, 'footer-counts')
     assert.equal(footerCounts.length, 1)
     assert.equal(textOf(footerCounts[0]), `共 ${TOTAL_SKILLS} 个 · 已安装 2 个 · 显示 ${TOTAL_SKILLS} 个`)
+    assert.ok(allText.includes('本地缓存（非实时）'), '页脚来源 Tag 仍然在')
+    assert.ok(allText.includes('当前展示本地缓存目录（非实时）'), 'cache 来源必须给出「非实时」说明行')
     assert.equal(elements(tree, (node) => node.type === 'img').length, 0, '不得渲染任何 img')
   })
 })
 
-test('渲染：行内结构 = 48px 字形盒 + 14/500 名称 + 12/18 两行摘要 + Tag 元信息 + 官方 Button 动作', async () => {
+test('渲染：卡片结构 = 中文名 + 英文名 + 两行摘要 + 六项元信息 + 官方 Button 动作', async () => {
   await withClient({}, async (client) => {
     const mounted = mountComponents(client)
     const fixture = buildFixture()
@@ -865,57 +909,95 @@ test('渲染：行内结构 = 48px 字形盒 + 14/500 名称 + 12/18 两行摘�
     client.mini.render(mounted.main.component, { api: fake.api })
     await flush()
     const tree = client.mini.render(mounted.main.component, { api: fake.api })
-    const rows = elements(tree, (node) => typeof node.type === 'function' && node.type.name === 'SkillRow')
-    const pending = rows.find((row) => row.props.skill.installed !== true)
-    const rowTree = client.mini.render(pending.type, pending.props)
+    const cards = cardsOf(tree)
+    const pending = cards.find((card) => card.props.skill.installed !== true)
+    const cardTree = client.mini.render(pending.type, pending.props)
     const skill = pending.props.skill
 
-    // 48px 字形盒：首字，不加载任何图片
-    const glyphBoxes = elements(rowTree, (node) => node.props !== undefined && node.props.className === 'fs-rowIcon')
-    assert.equal(glyphBoxes.length, 1)
-    assert.equal(glyphBoxes[0].props['aria-hidden'], 'true')
-    assert.equal(textOf(glyphBoxes[0]), Array.from(skill.name.zh)[0].toUpperCase())
-    assert.equal(elements(rowTree, (node) => node.type === 'img').length, 0)
-
-    // 名称：14/500 的文本按钮，点它开详情
-    const nameButton = elements(rowTree, (node) => node.type === 'button' && node.props.className === 'fs-rowOpen')[0]
+    // 名称：中文名是可点的文本按钮，点它开详情；不再有头像 / 字形盒
+    const nameButton = elements(cardTree, (node) => node.type === 'button' && node.props.className === 'fs-cardName')[0]
     assert.ok(nameButton !== undefined)
     assert.equal(textOf(nameButton), skill.name.zh)
     assert.equal(nameButton.props['aria-label'], '查看 ' + skill.name.zh + ' 详情')
     assert.equal(typeof nameButton.props.onClick, 'function')
+    assert.equal(elements(cardTree, (node) => node.props !== undefined && node.props.className === 'fs-rowIcon').length, 0, '去掉头像')
+    assert.equal(elements(cardTree, (node) => node.props !== undefined && typeof node.props.className === 'string' && node.props.className.indexOf('fs-cardMark') >= 0).length, 0, '去掉头像')
+
+    // 英文名：与中文名不同才显示
+    const nameEn = elements(cardTree, (node) => node.props !== undefined && node.props.className === 'fs-cardNameEn')[0]
+    assert.ok(nameEn !== undefined, '卡片要显示英文名')
+    assert.equal(textOf(nameEn), skill.name.en)
 
     // 摘要：两行截断（-webkit-line-clamp:2 的类），title 提供全文
-    const summary = elements(rowTree, (node) => node.props !== undefined && node.props.className === 'fs-rowSummary')[0]
+    const summary = elements(cardTree, (node) => node.props !== undefined && node.props.className === 'fs-cardSummary')[0]
     assert.ok(summary !== undefined)
     assert.equal(textOf(summary), skill.summary.zh)
     assert.equal(summary.props.title, skill.summary.zh)
 
-    // Tag 元信息：分类 / v<version> / 来源类型（license 不进列表行，只在详情里如实显示）
-    const rowTags = elements(rowTree, (node) => node.type === client.primitives.Tag).map((node) => textOf(node))
-    assert.ok(rowTags.includes('消费者保护'))
-    assert.ok(rowTags.includes('v' + skill.version))
-    assert.ok(rowTags.includes('SkillHub'))
-    assert.ok(!rowTags.includes('专有'), '列表行不再显示 license 标签')
-    assert.equal(elements(rowTree, (node) => node.type === client.primitives.Tag && node.props.tone === 'success').length, 0)
+    // 六项元信息：类别 / 版本 / 来源 / 协议 / 作者 / 核验日期
+    const meta = elements(cardTree, (node) => node.props !== undefined && node.props.className === 'fs-cardMeta')[0]
+    assert.ok(meta !== undefined, '卡片要有元信息网格')
+    assert.equal(meta.type, 'dl')
+    const keys = elements(meta, (node) => node.props !== undefined && node.props.className === 'fs-cardMetaKey').map((node) => textOf(node))
+    assert.deepEqual(keys, ['类别', '版本', '来源', '协议', '作者', '核验日期'])
+    const values = elements(meta, (node) => node.props !== undefined && node.props.className === 'fs-cardMetaVal').map((node) => textOf(node))
+    assert.deepEqual(values, [
+      '消费者保护',
+      skill.version,
+      'SkillHub',
+      '专有',
+      skill.author,
+      SNAPSHOT.verified_at,
+    ])
+    assert.equal(cardTree.props['data-installed'], 'false')
+    assert.equal(elements(cardTree, (node) => node.props !== undefined && node.props['data-dsh-part'] === 'card-invocation').length, 0, '未安装不显示调用名')
 
     // 动作：ghost 详情 + primary 安装
-    const buttons = elements(rowTree, (node) => node.type === client.primitives.Button)
+    const buttons = elements(cardTree, (node) => node.type === client.primitives.Button)
     const buttonInfo = buttons.map((node) => ({ text: textOf(node), variant: node.props.variant, size: node.props.size }))
     assert.deepEqual(buttonInfo, [
       { text: '详情', variant: 'ghost', size: 'sm' },
       { text: '安装', variant: 'primary', size: 'sm' },
     ])
 
-    // 已安装行：success Tag + ghost 卸载 + ghost 详情
-    const installed = rows.find((row) => row.props.skill.installed === true)
-    const installedTree = client.mini.render(installed.type, installed.props)
+    // 已安装卡片：success Tag + 调用名 + ghost 卸载
+    const installed = cards.find((card) => card.props.skill.installed === true)
+    const installedProps = Object.assign({}, installed.props, {
+      skill: Object.assign({}, installed.props.skill, { installedInvocationName: 'consumer-review' }),
+    })
+    const installedTree = client.mini.render(installed.type, installedProps)
+    assert.equal(installedTree.props['data-installed'], 'true')
     assert.equal(elements(installedTree, (node) => node.type === client.primitives.Tag && node.props.tone === 'success').length, 1)
+    const invoke = elements(installedTree, (node) => node.props !== undefined && node.props['data-dsh-part'] === 'card-invocation')
+    assert.equal(invoke.length, 1, '已安装卡片亮出调用名')
+    assert.ok(textOf(invoke[0]).includes('consumer-review'))
     const installedButtons = elements(installedTree, (node) => node.type === client.primitives.Button)
       .map((node) => ({ text: textOf(node), variant: node.props.variant }))
     assert.deepEqual(installedButtons, [
       { text: '详情', variant: 'ghost' },
       { text: '卸载', variant: 'ghost' },
     ])
+  })
+})
+
+test('渲染：技能卡片英文名与调用名的纯函数行为', async () => {
+  await withClient({}, async (client) => {
+    const { secondaryName, invocationNameOf, skillFieldPairs } = client.exports.__test
+    const skill = { name: { zh: '消保审查', en: 'Consumer Protection Review' } }
+    assert.equal(secondaryName(skill, 'zh'), 'Consumer Protection Review', '中文界面下补英文名')
+    assert.equal(secondaryName(skill, 'en'), '消保审查', '英文界面下补中文名')
+    assert.equal(secondaryName({ name: { zh: '同名' } }, 'zh'), '', '没有另一个名字时不重复渲染')
+    assert.equal(secondaryName({ name: { zh: '同名', en: '同名' } }, 'zh'), '', '两个名字相同时不重复渲染')
+
+    assert.equal(invocationNameOf({ installedInvocationName: 'gongwen' }), 'gongwen')
+    assert.equal(invocationNameOf({}), '', '没有调用名时返回空串')
+
+    // 缺值统一「未标注」，但六项一项不少
+    const pairs = skillFieldPairs({}, { categoryTitle: '消费者保护', sourceLabel: 'GitHub', lang: 'zh' })
+    assert.deepEqual(pairs.map((pair) => pair.key), ['field.category', 'field.version', 'field.source', 'field.license', 'field.author', 'field.verifiedAt'])
+    assert.deepEqual(pairs.map((pair) => pair.value), ['消费者保护', '未标注', 'GitHub', '未标注', '未标注', '未标注'])
+    const proprietary = skillFieldPairs({ license: 'proprietary' }, { categoryTitle: '', sourceLabel: '', lang: 'zh' })
+    assert.equal(proprietary[3].value, '专有', 'proprietary 走本地化文案')
   })
 })
 
@@ -930,7 +1012,7 @@ test('渲染：视图切换 / 分类筛选 / 空分类 / 搜索 / Esc 清空 / �
     const fake = createFakeApi(fixture)
     let tree
 
-    const rowsOf = () => elements(tree, (node) => typeof node.type === 'function' && node.type.name === 'SkillRow')
+    const rowsOf = () => cardsOf(tree)
 
     client.mini.render(PanelPage, { api: fake.api })
     await flush()
@@ -1024,7 +1106,7 @@ test('渲染：刷新走 catalog?refresh=1，失败降级为错误行且保留�
     client.mini.render(mounted.main.component, { api: fake.api })
     await flush()
     let tree = client.mini.render(mounted.main.component, { api: fake.api })
-    const rowsOf = () => elements(tree, (node) => typeof node.type === 'function' && node.type.name === 'SkillRow')
+    const rowsOf = () => cardsOf(tree)
     assert.equal(rowsOf().length, TOTAL_SKILLS)
 
     const refreshButton = elements(tree, (node) => node.type === client.primitives.Button && textOf(node) === '刷新')[0]
@@ -1055,7 +1137,7 @@ test('渲染：快照 / 离线模式明确标注，不得说成实时', async ()
     assert.ok(allText.includes('目录抓取异常：ENOTFOUND upstream'))
     assert.equal(allText.includes('上游实时目录'), false, '快照不得标注为实时')
     assert.equal(allText.includes('刚刚刷新'), false, '快照不得说成「刚刚刷新」')
-    assert.equal(elements(tree, (node) => typeof node.type === 'function' && node.type.name === 'SkillRow').length, TOTAL_SKILLS, '快照模式仍可浏览')
+    assert.equal(cardsOf(tree).length, TOTAL_SKILLS, '快照模式仍可浏览')
   })
 
   await withClient({}, async (client) => {
@@ -1073,18 +1155,28 @@ test('渲染：快照 / 离线模式明确标注，不得说成实时', async ()
   })
 })
 
-test('渲染：初次加载有骨架与 TextShimmer', async () => {
+test('渲染：初次加载有骨架与 TextShimmer，且 banner/元信息行先立住不跳版', async () => {
   await withClient({}, async (client) => {
     const mounted = mountComponents(client)
     const fake = createFakeApi(buildFixture())
     const tree = client.mini.render(mounted.main.component, { api: fake.api })
     const allText = texts(tree).join('\n')
     assert.ok(allText.includes('正在获取金融行业插件目录…'))
-    assert.equal(elements(tree, (node) => node.props !== undefined && node.props.className === 'fs-skeletonRow').length, 3)
+    assert.equal(elements(tree, (node) => node.props !== undefined && node.props.className === 'fs-skeletonCard').length, 6)
     const shimmer = elements(tree, (node) => node.type === client.primitives.TextShimmer)
     assert.equal(shimmer.length, 1)
     assert.equal(shimmer[0].props.active, true)
-    assert.equal(elements(tree, (node) => node.type === client.primitives.Button).length, 0, '加载态不渲染页脚刷新动作')
+
+    // 加载态就把 banner / 元信息一行 / 搜索框画出来：目录到手时不发生大幅跳版
+    assert.equal(byPart(tree, 'hero').length, 1, '加载态也有 banner')
+    assert.equal(byPart(tree, 'meta-row').length, 1, '加载态也有元信息行')
+    const metaText = textOf(byPart(tree, 'meta-row')[0])
+    assert.ok(metaText.includes('数据源'), '加载态数据源已经可见')
+    assert.ok(metaText.includes('更新 —'), '日期未知时写占位符而不是整行消失')
+    assert.ok(metaText.includes('核验 —'))
+    assert.equal(byPart(tree, 'toolbar').length, 1, '加载态也能看到搜索框')
+    assert.equal(byPart(tree, 'divider').length, 1)
+    assert.equal(byPart(tree, 'footer').length, 0, '加载态不渲染页脚')
   })
 })
 
@@ -1129,10 +1221,10 @@ test('渲染：详情 Modal = MarkdownText 正文 + 元信息 + footer 动作', 
     let tree = client.mini.render(PanelPage, { api: fake.api })
 
     // 打开第一条（已安装、skillhub 来源、proprietary）的详情
-    const firstRow = elements(tree, (node) => typeof node.type === 'function' && node.type.name === 'SkillRow')[0]
-    const rowTree = client.mini.render(firstRow.type, firstRow.props)
-    const openButton = elements(rowTree, (node) => node.type === 'button' && node.props.className === 'fs-rowOpen')[0]
-    assert.ok(openButton !== undefined, '行名称必须可点开详情')
+    const firstCard = cardsOf(tree)[0]
+    const cardTree = client.mini.render(firstCard.type, firstCard.props)
+    const openButton = elements(cardTree, (node) => node.type === 'button' && node.props.className === 'fs-cardName')[0]
+    assert.ok(openButton !== undefined, '卡片名称必须可点开详情')
     assert.equal(openButton.props['aria-label'], '查看 消保审查 详情')
     openButton.props.onClick()
     tree = client.mini.render(PanelPage, { api: fake.api })
@@ -1194,7 +1286,7 @@ test('渲染：行内安装 / 卸载会调用宿主路由并给出反馈', async
     await flush()
     let tree = client.mini.render(PanelPage, { api: fake.api })
 
-    const rows = elements(tree, (node) => typeof node.type === 'function' && node.type.name === 'SkillRow')
+    const rows = cardsOf(tree)
     const notInstalled = rows.find((row) => row.props.skill.installed !== true)
     assert.ok(notInstalled !== undefined)
     const notInstalledRowTree = client.mini.render(notInstalled.type, notInstalled.props)
@@ -1209,7 +1301,7 @@ test('渲染：行内安装 / 卸载会调用宿主路由并给出反馈', async
     const expectedName = notInstalled.props.skill.name.zh
     assert.ok(texts(tree).join('\n').includes('已安装 ' + expectedName), '安装成功要有反馈行')
 
-    const installedRow = elements(tree, (node) => typeof node.type === 'function' && node.type.name === 'SkillRow')
+    const installedRow = cardsOf(tree)
       .find((row) => row.props.skill.installed === true)
     assert.ok(installedRow !== undefined)
     const installedRowTree = client.mini.render(installedRow.type, installedRow.props)

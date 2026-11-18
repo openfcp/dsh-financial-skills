@@ -10,18 +10,16 @@
 [![dsh](https://img.shields.io/badge/dsh-%3E%3D0.2.0--rc.2-4f46e5)](package.json)
 [![node](https://img.shields.io/badge/node-%3E%3D20-339933)](package.json)
 
-![Financial Skills page preview · light](docs/preview.png)
+<p align="center"><strong>Layout preview</strong>: open <a href="docs/preview.html"><code>docs/preview.html</code></a>
+(regenerate with `npm run preview` — it extracts the real CSS from `client.js` and pairs it with the packaged snapshot; light/dark follows the system)</p>
 
-<p align="center"><sub>Light theme: the sidebar entry plus the full-page catalog. Captured from a real
-browser against an isolated DSH instance (1440×900).</sub></p>
+```sh
+npm run preview && open docs/preview.html
+```
 
-![Financial Skills page preview · dark](docs/preview-dark.png)
-
-<p align="center"><sub>Dark theme: every colour comes from the host <code>--dsw-*</code> tokens; the plugin never overrides the theme.</sub></p>
-
-![Installed view](docs/preview-installed.png)
-
-<p align="center"><sub>The Installed view: installed skills carry a green tag and the row action becomes Uninstall.</sub></p>
+> The preview page shares the panel CSS and the same `--dsw-*` tokens with the host; only the primitives
+> (Button / Input / Tag / Pill) are drawn as equivalent stand-ins. The three 0.1.x bitmap screenshots were removed
+> with the redesign — capture new ones in a real host and fill in `screenshots.json` if you need bitmaps.
 
 ---
 
@@ -47,11 +45,40 @@ If a reference is unreachable (SkillHub down, GitHub and mirrors failing), insta
 ## What you see after installing
 
 1. A **金融技能** sidebar entry appears in DSH — a 16×16 line icon of a classical bank facade (pediment, three columns, ground line);
-2. Clicking it replaces the main area with the full-page 「金融行业skills精选」: title and subtitle, a search box, 9 category pills, and an All / Installed switch;
-3. Skills are listed with name, summary, category, version and source (the license is shown honestly in the detail view);
-4. Clicking a name opens a detail modal with the rendered `SKILL.md` body, file list, total size, license and source coordinates;
-5. **Install** writes the skill into the local skills directory and turns the button into Installed / Uninstall;
-6. **Uninstall** moves the directory under `.trash` instead of deleting it, so you can recover it manually.
+2. Clicking it replaces the main area with the full-page 「金融行业skills精选」: a header banner (mark + title + slogan + an "N skills · M categories" pill), then a single meta row — **data source · updated · verified · live/not-live · refresh**;
+3. Next row: **search box (left) + All / Installed (right)**; below a horizontal rule come the **category pills**;
+4. Then the **skill card grid**: Chinese name + English name, a two-line summary, and six metadata fields (category / version / source / license / author / last verified). Cards use a **light grey border**; **installed ones switch to a different border colour** and carry an Installed tag;
+5. Clicking a name opens a detail modal with the rendered `SKILL.md` body, file list, total size, license and source coordinates;
+6. **Install** writes the skill into the local skills directory — the card border updates immediately, the button becomes Uninstall, and the skill is **callable in the current conversation right away** (installed cards also show the invocation name);
+7. **Uninstall** moves the directory under `.trash` instead of deleting it, so you can recover it manually;
+8. The footer keeps the update-date overview (updated · relative time · counts · source · refresh).
+
+## Install from a URL (plugin manager)
+
+In DSH, open **Plugins → Install plugin → Git repository** and paste the address **including the version tag**:
+
+```
+https://github.com/openfcp/dsh-financial-skills#v0.2.0
+```
+
+It appears in the plugin list after install; **fully restart** (Cmd+Q, then reopen) and the 金融技能 sidebar entry shows up.
+
+> ### Why the `#v0.2.0` suffix — and what "cannot determine which package was installed from the dependency change" means
+>
+> A git dependency without a ref pins the default branch to **one specific commit** in the lockfile. Clicking install
+> again resolves to the same commit, pnpm prints `Already up to date`, and `package.json` does not change. The plugin
+> manager attributes the install by diffing dependencies; with an empty diff it can only report
+> `无法从依赖变更中确定安装了哪一个包` ("cannot determine which package was installed from the dependency change").
+>
+> Nothing is broken and the URL is not wrong — **it is already installed**. Hence:
+>
+> | Situation | What to do |
+> | --- | --- |
+> | Upgrading from an older version | Re-install with the new tag (`#v0.2.0`): the spec changes, so pnpm actually rewrites the lockfile |
+> | Reinstalling the same version | **Uninstall** it in the plugin list first, then install with the same URL |
+> | Tracking the latest | Use `#main`; when upstream has no new commit you still get `Already up to date` and the same notice — that is expected |
+>
+> To check the installed version: `version` in `~/.dsh/profiles/desktop/node_modules/dsh-financial-skills/package.json`.
 
 ## Install (3 steps)
 
@@ -108,6 +135,27 @@ dsh plugin --profile desktop remove dsh-financial-skills
 ```
 
 Fully restart afterwards. Skill directories installed through this plugin (`<DSH_HOME>/skills/<id>/`) are user data: uninstalling the plugin does not delete them. Remove them with the in-page Uninstall button or by hand.
+
+## Upgrade
+
+Git dependencies **do not follow the repository automatically** — `pnpm add <the same URL>` just answers `Already up to date`. Upgrade like this:
+
+```sh
+# 1. Switch to the new tag (the spec changes, so pnpm re-resolves and the lockfile changes)
+dsh plugin --profile desktop add https://github.com/openfcp/dsh-financial-skills#v0.2.0
+# 2. Fully restart (Cmd+Q, then reopen)
+```
+
+Or uninstall and reinstall:
+
+```sh
+./scripts/uninstall-local.sh desktop
+./scripts/install-local.sh desktop      # link: for local development — edits apply after a restart
+```
+
+> Every release is tagged `vX.Y.Z` and `CHANGELOG.md` spells out the changes and the upgrade path. **Installed skill
+> directories survive a plugin upgrade**; to pick up the frontmatter normalisation added in 0.2.0 for a skill you
+> already installed, uninstall and reinstall that skill once.
 
 ## Features
 

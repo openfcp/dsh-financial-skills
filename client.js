@@ -69,9 +69,33 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__ !== undefined && ty
           'entry.label': '金融技能',
           'page.title': '金融行业skills精选',
           'page.subtitle': '为金融从业者策展的 AI 技能清单：按业务场景分类，标注能力边界与来源。',
+          'hero.slogan': '按业务场景策展的金融 AI 技能库',
+          'hero.badge': '{count} 个技能 · {categories} 个分类',
           'page.sourcePrefix': '数据源',
           'page.sourceRepo': 'openfcp/awesome-financial-skills',
           'page.updated': '更新 {date}',
+          'page.verified': '核验 {date}',
+          'meta.stale': '非实时',
+          'meta.live': '实时',
+          'meta.refreshing': '刷新中…',
+          'field.category': '类别',
+          'field.version': '版本',
+          'field.source': '来源',
+          'field.license': '协议',
+          'field.author': '作者',
+          'field.verifiedAt': '核验日期',
+          'field.invocation': '调用名',
+          'field.unknown': '未标注',
+          'card.detail': '详情',
+          'card.install': '安装',
+          'card.installing': '安装中…',
+          'card.uninstall': '卸载',
+          'card.uninstalling': '卸载中…',
+          'card.installed': '已安装',
+          'card.openAria': '查看 {name} 详情',
+          'card.noSummary': '暂无摘要',
+          'card.invocationHint': '在技能列表里用这个名字调用',
+          'card.invocationDiffers': '调用名与技能 id 不同，在技能列表里按「{name}」查找',
           'search.label': '搜索插件',
           'search.placeholder': '搜索名称、摘要、标签或作者',
           'filter.viewLabel': '视图',
@@ -155,9 +179,33 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__ !== undefined && ty
           'entry.label': 'Financial Skills',
           'page.title': 'Curated Financial Skills',
           'page.subtitle': 'A curated AI skill catalog for financial professionals — organized by business scenario, with capability boundaries and provenance made explicit.',
+          'hero.slogan': 'A curator-built skill library for financial work',
+          'hero.badge': '{count} skills · {categories} categories',
           'page.sourcePrefix': 'Data source',
           'page.sourceRepo': 'openfcp/awesome-financial-skills',
           'page.updated': 'Updated {date}',
+          'page.verified': 'Verified {date}',
+          'meta.stale': 'Not live',
+          'meta.live': 'Live',
+          'meta.refreshing': 'Refreshing…',
+          'field.category': 'Category',
+          'field.version': 'Version',
+          'field.source': 'Source',
+          'field.license': 'License',
+          'field.author': 'Author',
+          'field.verifiedAt': 'Verified',
+          'field.invocation': 'Invoke as',
+          'field.unknown': 'Not stated',
+          'card.detail': 'Details',
+          'card.install': 'Install',
+          'card.installing': 'Installing…',
+          'card.uninstall': 'Uninstall',
+          'card.uninstalling': 'Uninstalling…',
+          'card.installed': 'Installed',
+          'card.openAria': 'View {name} details',
+          'card.noSummary': 'No summary yet',
+          'card.invocationHint': 'Call it by this name in the skill list',
+          'card.invocationDiffers': 'Invocation name differs from the skill id — look for "{name}" in the skill list',
           'search.label': 'Search skills',
           'search.placeholder': 'Search name, summary, tag or author',
           'filter.viewLabel': 'View',
@@ -446,14 +494,6 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__ !== undefined && ty
         return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
       }
 
-      /** 48px 字形盒里的首字（不加载任何第三方图片）。 */
-      function skillInitial(skill, lang) {
-        const name = pickLocalized(skill !== null && skill !== undefined ? skill.name : undefined, lang)
-        const source = name !== '' ? name : skill !== null && skill !== undefined && typeof skill.id === 'string' ? skill.id : '?'
-        const chars = Array.from(source)
-        return chars.length > 0 ? chars[0].toUpperCase() : '?'
-      }
-
       /** 分类 id → 本地化分类名（找不到时回退 id 本身，不隐藏分类）。 */
       function categoryTitle(categories, id, lang) {
         const list = Array.isArray(categories) ? categories : []
@@ -555,31 +595,59 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__ !== undefined && ty
       //#region 样式（只用官方 token；颜色/圆角/边框全部走 var(--dsw-*)）
       const CSS = `
 .fs-view{box-sizing:border-box;display:flex;flex-direction:column;min-width:0;height:100%;min-height:0}
-.fs-page{box-sizing:border-box;display:flex;flex-direction:column;align-items:center;gap:32px;height:100%;min-height:0;padding:0 clamp(24px,4vw,48px) 48px;overflow:hidden auto;color:var(--dsw-alias-label-primary)}
-.fs-pageHead{box-sizing:border-box;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;width:100%;max-width:960px;padding-top:28px}
-.fs-headMain{min-width:0}
-.fs-title{margin:0;font-size:20px;font-weight:500;line-height:28px}
-.fs-intro{margin:4px 0 0;font-size:13px;line-height:20px;color:var(--dsw-alias-label-secondary)}
-.fs-sourceLine{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:8px 0 0;font-size:12px;line-height:18px;color:var(--dsw-alias-label-tertiary)}
-.fs-content{display:flex;flex-direction:column;gap:24px;width:100%;max-width:960px;min-width:0}
-.fs-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
-.fs-searchField{flex:1 1 240px;min-width:0;max-width:320px}
+.fs-page{box-sizing:border-box;display:flex;flex-direction:column;align-items:center;gap:20px;height:100%;min-height:0;padding:0 clamp(20px,3vw,40px) 40px;overflow:hidden auto;color:var(--dsw-alias-label-primary)}
+.fs-shell{display:flex;flex-direction:column;gap:18px;width:100%;max-width:1120px;padding-top:20px}
+
+/* 头部 banner：内联 SVG 标识 + 标题 + slogan，右侧一枚统计胶囊 */
+.fs-hero{position:relative;display:flex;align-items:center;gap:16px;min-width:0;padding:22px 24px;overflow:hidden;border:.5px solid var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-xl);background:var(--dsw-alias-bg-layer-1)}
+.fs-heroMark{position:relative;display:inline-flex;flex:none;align-items:center;justify-content:center;width:44px;height:44px;border:.5px solid var(--dsw-alias-border-l3);border-radius:var(--dsw-radius-lg);background:var(--dsw-alias-bg-layer-2);color:var(--dsw-alias-brand-primary)}
+.fs-heroMain{display:flex;flex-direction:column;gap:2px;min-width:0}
+.fs-heroTitle{margin:0;font-size:19px;font-weight:600;line-height:26px;letter-spacing:.2px}
+.fs-heroSlogan{margin:0;font-size:12.5px;line-height:18px;color:var(--dsw-alias-label-secondary)}
+.fs-heroSpacer{flex:1}
+.fs-heroBadge{flex:none;padding:4px 10px;border:.5px solid var(--dsw-alias-border-l2);border-radius:999px;color:var(--dsw-alias-label-secondary);font-size:11.5px;line-height:16px;font-variant-numeric:tabular-nums;white-space:nowrap}
+
+/* 一行元信息：数据源 · 更新 · 核验 · 非实时 · 刷新 */
+.fs-metaRow{display:flex;flex-wrap:wrap;align-items:center;gap:10px;min-width:0;font-size:12px;line-height:18px;color:var(--dsw-alias-label-tertiary)}
+.fs-metaItem{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.fs-metaKey{color:var(--dsw-alias-label-caption)}
+.fs-metaVal{color:var(--dsw-alias-label-secondary);font-variant-numeric:tabular-nums}
+.fs-metaDot{color:var(--dsw-alias-border-l3)}
+.fs-metaSpacer{flex:1}
+
+/* 搜索（左）+ 视图切换（右） */
+.fs-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:12px;min-width:0}
+.fs-searchField{flex:0 1 360px;min-width:200px;max-width:360px}
 .fs-toolbarSpacer{flex:1}
+.fs-divider{height:0;margin:0;border:0;border-top:.5px solid var(--dsw-alias-border-l2)}
+
+/* 分类胶囊 */
 .fs-categoryBar{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
-.fs-panelBody{display:flex;flex-direction:column;gap:24px;min-width:0}
 .fs-pillCount{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-caption);font-size:12px;line-height:18px}
-.fs-list{display:flex;flex-direction:column;gap:2px;margin:0;padding:0;list-style:none}
-.fs-row{border-radius:var(--dsw-radius-xl);margin:0 -8px;min-width:0;transition:background-color var(--ds-transition-duration,.2s) var(--ds-ease-in-out,ease-in-out)}
-.fs-row:hover{background:var(--dsw-alias-interactive-bg-hover)}
-.fs-rowHead{display:flex;align-items:center;gap:14px;padding:8px}
-.fs-rowIcon{display:inline-flex;flex:none;align-items:center;justify-content:center;width:48px;height:48px;border:.5px solid var(--dsw-alias-border-l3);border-radius:var(--dsw-radius-lg);color:var(--dsw-alias-label-secondary);font-size:18px;font-weight:500;line-height:1;overflow:hidden}
-.fs-rowMain{display:flex;flex:1;flex-direction:column;gap:4px;min-width:0}
-.fs-rowTitleRow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;min-width:0}
-.fs-rowOpen{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border:0;background:0 0;color:inherit;font:inherit;font-size:14px;font-weight:500;line-height:20px;text-align:left;cursor:pointer}
-.fs-rowOpen:hover{text-decoration:underline;text-underline-offset:3px}
-.fs-rowSummary{display:-webkit-box;overflow:hidden;-webkit-box-orient:vertical;-webkit-line-clamp:2;color:var(--dsw-alias-label-tertiary);font-size:12px;line-height:18px}
-.fs-rowMeta{display:flex;flex-wrap:wrap;align-items:center;gap:6px;min-width:0}
-.fs-rowEnd{display:inline-flex;flex:none;align-items:center;gap:8px}
+.fs-panelBody{display:flex;flex-direction:column;gap:14px;min-width:0}
+
+/* 卡片网格 */
+.fs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px;margin:0;padding:0;list-style:none}
+.fs-card{box-sizing:border-box;display:flex;flex-direction:column;gap:10px;min-width:0;padding:14px 16px 12px;border:1px solid var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-xl);background:var(--dsw-alias-bg-layer-1);transition:border-color var(--ds-transition-duration,.2s) var(--ds-ease-in-out,ease-in-out),background-color var(--ds-transition-duration,.2s) var(--ds-ease-in-out,ease-in-out)}
+.fs-card:hover{border-color:var(--dsw-alias-border-l3);background:var(--dsw-alias-bg-layer-2)}
+.fs-card[data-installed="true"]{border-color:var(--dsw-alias-state-success-primary)}
+.fs-card[data-installed="true"]:hover{border-color:var(--dsw-alias-state-success-primary)}
+.fs-cardHead{display:flex;align-items:flex-start;gap:8px;min-width:0}
+.fs-cardTitles{display:flex;flex-direction:column;gap:1px;min-width:0;flex:1}
+.fs-cardName{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border:0;background:0 0;color:inherit;font:inherit;font-size:14.5px;font-weight:600;line-height:21px;text-align:left;cursor:pointer;padding:0}
+.fs-cardName:hover{text-decoration:underline;text-underline-offset:3px}
+.fs-cardNameEn{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary);font-size:11.5px;line-height:16px}
+.fs-cardSummary{display:-webkit-box;overflow:hidden;-webkit-box-orient:vertical;-webkit-line-clamp:2;margin:0;color:var(--dsw-alias-label-tertiary);font-size:12px;line-height:18px;min-height:36px}
+.fs-cardMeta{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 14px;margin:0;padding-top:8px;border-top:.5px solid var(--dsw-alias-border-l2)}
+.fs-cardMetaPair{display:flex;align-items:baseline;gap:6px;min-width:0;font-size:11.5px;line-height:16px}
+.fs-cardMetaKey{flex:none;color:var(--dsw-alias-label-caption)}
+.fs-cardMetaVal{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-secondary)}
+.fs-cardInvoke{display:flex;align-items:center;gap:6px;min-width:0;font-size:11.5px;line-height:16px;color:var(--dsw-alias-state-success-primary)}
+.fs-cardInvokeCode{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--ds-font-family-code,ui-monospace,monospace);font-size:11.5px}
+.fs-cardFoot{display:flex;align-items:center;gap:6px;margin-top:auto;padding-top:2px}
+.fs-cardFootSpacer{flex:1}
+
+/* 状态 / 提示 */
 .fs-state{display:flex;flex-direction:column;align-items:center;gap:12px;padding:40px 16px;text-align:center}
 .fs-stateText{margin:0;font-size:13px;line-height:20px;color:var(--dsw-alias-label-tertiary)}
 .fs-stateIcon{color:var(--dsw-alias-label-caption)}
@@ -588,13 +656,17 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__ !== undefined && ty
 .fs-notice{margin:0;font-size:12px;line-height:18px;color:var(--dsw-alias-state-warn-primary);overflow-wrap:anywhere}
 .fs-noticeRow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;min-width:0}
 .fs-noticeOk{margin:0;font-size:12px;line-height:18px;color:var(--dsw-alias-state-success-primary);overflow-wrap:anywhere}
-.fs-skeletons{display:flex;flex-direction:column;gap:2px;width:100%}
-.fs-skeletonRow{display:flex;align-items:center;gap:14px;padding:8px}
-.fs-skeletonIcon{width:48px;height:48px;border-radius:var(--dsw-radius-lg);background:var(--dsw-alias-bg-skeleton)}
-.fs-skeletonLines{flex:1;height:40px;border-radius:var(--dsw-radius-md);background:var(--dsw-alias-bg-skeleton)}
+.fs-notices{display:flex;flex-direction:column;gap:8px}
+.fs-skeletons{display:flex;flex-direction:column;gap:12px;width:100%}
+.fs-skeletonGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px}
+.fs-skeletonCard{height:168px;border:.5px solid var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-xl);background:var(--dsw-alias-bg-skeleton)}
+
+/* 页脚（保持原样：更新日期 · 相对时间 · 条数 · 来源 · 刷新） */
 .fs-footer{display:flex;flex-wrap:wrap;align-items:center;gap:12px;width:100%;padding:8px 0 4px;border-top:.5px solid var(--dsw-alias-border-l2)}
 .fs-footerText{margin:0;font-size:12px;line-height:18px;color:var(--dsw-alias-label-tertiary);font-variant-numeric:tabular-nums}
 .fs-footerSpacer{flex:1}
+
+/* 详情弹窗 */
 .fs-detail{width:min(720px,100%);max-height:min(760px,100%)}
 .fs-detailContent{min-height:0;overflow-y:auto}
 .fs-detailMeta{display:grid;grid-template-columns:max-content 1fr;gap:4px 16px;margin:0 0 16px;padding:0 0 16px;border-bottom:.5px solid var(--dsw-alias-border-l2);font-size:13px;line-height:20px}
@@ -663,69 +735,130 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__ !== undefined && ty
       }
       //#endregion
 
-      //#region 列表行
+      //#region 列表卡片
       /**
-       * 一条技能行：左 48px 字形盒（首字，不加载图片），中间名称 + 两行摘要 + Tag 元信息，
-       * 右侧官方 Button（未装 primary 安装 / 已装 ghost 卸载 + 详情）。点名称开详情 Modal。
+       * 一条技能的元信息键值对（卡片里按 2 列网格铺开）。
+       *
+       * 固定六项：类别 / 版本 / 来源 / 协议 / 作者 / 核验日期，缺值统一写「未标注」，
+       * 不做隐藏——网格会因为缺项而参差不齐，读者也没法判断是没写还是没显示。
+       *
+       * @param {object} skill 归一化技能
+       * @param {{ categoryTitle: string, sourceLabel: string, lang: string }} context 展示上下文
+       * @returns {Array<{ key: string, value: string }>} 六项元信息
        */
-      function SkillRow(props) {
+      function skillFieldPairs(skill, context) {
+        const license = typeof skill.license === 'string' && skill.license !== ''
+          ? (skill.license === 'proprietary' ? tt('license.proprietary') : skill.license)
+          : tt('field.unknown')
+        const author = typeof skill.author === 'string' && skill.author !== '' ? skill.author : tt('field.unknown')
+        const version = typeof skill.version === 'string' && skill.version !== '' ? skill.version : tt('field.unknown')
+        const verifiedAt = typeof skill.verifiedAt === 'string' && skill.verifiedAt !== '' ? skill.verifiedAt : tt('field.unknown')
+        return [
+          { key: 'field.category', value: context.categoryTitle },
+          { key: 'field.version', value: version },
+          { key: 'field.source', value: context.sourceLabel },
+          { key: 'field.license', value: license },
+          { key: 'field.author', value: author },
+          { key: 'field.verifiedAt', value: verifiedAt },
+        ]
+      }
+
+      /** 卡片上的英文名：与中文名相同（上游只给一个名字）时不重复显示。 */
+      function secondaryName(skill, lang) {
+        const name = skill !== null && skill !== undefined ? skill.name : undefined
+        if (name === null || name === undefined || typeof name !== 'object') return ''
+        const primary = pickLocalized(name, lang)
+        const other = lang === 'en' ? name.zh : name.en
+        if (typeof other !== 'string' || other === '' || other === primary) return ''
+        return other
+      }
+
+      /** 已安装技能在技能列表里的调用名（来自 SKILL.md frontmatter）。 */
+      function invocationNameOf(skill) {
+        if (skill === null || skill === undefined) return ''
+        if (typeof skill.installedInvocationName === 'string' && skill.installedInvocationName !== '') return skill.installedInvocationName
+        return ''
+      }
+
+      /**
+       * 一张技能卡片：中文名 + 英文名 + 两行摘要 + 六项元信息 + 调用名 + 动作。
+       *
+       * 已安装的卡片换一种外边框颜色（`data-installed`），并把调用名亮出来——
+       * 技能列表里按的是 frontmatter 的 name，常常和目录 id 不一样。
+       */
+      function SkillCard(props) {
         const skill = props.skill
         const lang = props.lang
         const busy = props.busy
         const installed = skill.installed === true
-        const rowBusy = busy !== undefined && busy !== null && busy.id === skill.id
-        const installing = rowBusy && busy.kind === 'install'
-        const uninstalling = rowBusy && busy.kind === 'uninstall'
+        const cardBusy = busy !== undefined && busy !== null && busy.id === skill.id
+        const installing = cardBusy && busy.kind === 'install'
+        const uninstalling = cardBusy && busy.kind === 'uninstall'
         const displayName = pickLocalized(skill.name, lang) || skill.id
+        const secondary = secondaryName(skill, lang)
         const summary = pickLocalized(skill.summary, lang)
         const sourceType = skill.source !== null && skill.source !== undefined ? skill.source.type : undefined
         const sourceLabel = tt(sourceType === 'github' ? 'source.github' : sourceType === 'skillhub' ? 'source.skillhub' : 'source.other')
-        const version = typeof skill.version === 'string' && skill.version !== '' ? skill.version : ''
-        const metaTags = [
-          h(P.Tag, { key: 'category', tone: 'outline' }, props.categoryTitle),
-          version !== '' ? h(P.Tag, { key: 'version', tone: 'outline' }, 'v' + version) : null,
-          h(P.Tag, { key: 'source', tone: 'outline' }, sourceLabel),
-          installed ? h(P.Tag, { key: 'installed', tone: 'success' }, tt('row.installed')) : null,
-        ].filter((node) => node !== null)
+        const pairs = skillFieldPairs(skill, { categoryTitle: props.categoryTitle, sourceLabel, lang })
+        const invocation = invocationNameOf(skill)
 
-        return h('li', { className: 'fs-row', 'data-dsh-part': 'skill-row', 'data-skill': skill.id },
-          h('div', { className: 'fs-rowHead' },
-            h('span', { className: 'fs-rowIcon', 'aria-hidden': 'true' }, skillInitial(skill, lang)),
-            h('div', { className: 'fs-rowMain' },
-              h('div', { className: 'fs-rowTitleRow' },
-                h('button', {
-                  type: 'button',
-                  className: 'fs-rowOpen',
-                  'aria-label': tt('row.openAria', { name: displayName }),
-                  onClick: props.onOpen,
-                }, displayName),
-              ),
-              h('span', {
-                className: 'fs-rowSummary',
-                title: summary !== '' ? summary : undefined,
-              }, summary !== '' ? summary : tt('row.noSummary')),
-              h('div', { className: 'fs-rowMeta' }, metaTags),
+        return h('li', {
+          className: 'fs-card',
+          'data-dsh-part': 'skill-card',
+          'data-skill': skill.id,
+          'data-installed': installed ? 'true' : 'false',
+        },
+          h('div', { className: 'fs-cardHead' },
+            h('div', { className: 'fs-cardTitles' },
+              h('button', {
+                type: 'button',
+                className: 'fs-cardName',
+                'aria-label': tt('card.openAria', { name: displayName }),
+                onClick: props.onOpen,
+              }, displayName),
+              secondary !== '' ? h('span', { className: 'fs-cardNameEn' }, secondary) : null,
             ),
-            h('div', { className: 'fs-rowEnd' },
-              h(P.Button, {
+            installed ? h(P.Tag, { tone: 'success', key: 'installed' }, tt('card.installed')) : null,
+          ),
+          h('p', { className: 'fs-cardSummary', title: summary !== '' ? summary : undefined },
+            summary !== '' ? summary : tt('card.noSummary'),
+          ),
+          h('dl', { className: 'fs-cardMeta', 'data-dsh-part': 'card-meta' },
+            pairs.map((pair) => h('div', { className: 'fs-cardMetaPair', key: pair.key },
+              h('dt', { className: 'fs-cardMetaKey' }, tt(pair.key)),
+              h('dd', { className: 'fs-cardMetaVal', title: pair.value }, pair.value),
+            )),
+          ),
+          installed && invocation !== ''
+            ? h('p', {
+              className: 'fs-cardInvoke',
+              'data-dsh-part': 'card-invocation',
+              title: invocation !== skill.id ? tt('card.invocationDiffers', { name: invocation }) : tt('card.invocationHint'),
+            },
+              h('span', null, tt('field.invocation')),
+              h('code', { className: 'fs-cardInvokeCode' }, invocation),
+            )
+            : null,
+          h('div', { className: 'fs-cardFoot' },
+            h('span', { className: 'fs-cardFootSpacer' }),
+            h(P.Button, {
+              size: 'sm',
+              variant: 'ghost',
+              onClick: props.onOpen,
+            }, tt('card.detail')),
+            installed
+              ? h(P.Button, {
                 size: 'sm',
                 variant: 'ghost',
-                onClick: props.onOpen,
-              }, tt('row.detail')),
-              installed
-                ? h(P.Button, {
-                  size: 'sm',
-                  variant: 'ghost',
-                  disabled: rowBusy,
-                  onClick: props.onUninstall,
-                }, uninstalling ? tt('row.uninstalling') : tt('row.uninstall'))
-                : h(P.Button, {
-                  size: 'sm',
-                  variant: 'primary',
-                  disabled: rowBusy,
-                  onClick: props.onInstall,
-                }, installing ? tt('row.installing') : tt('row.install')),
-            ),
+                disabled: cardBusy,
+                onClick: props.onUninstall,
+              }, uninstalling ? tt('card.uninstalling') : tt('card.uninstall'))
+              : h(P.Button, {
+                size: 'sm',
+                variant: 'primary',
+                disabled: cardBusy,
+                onClick: props.onInstall,
+              }, installing ? tt('card.installing') : tt('card.install')),
           ),
         )
       }
@@ -1062,22 +1195,80 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__ !== undefined && ty
           )
         }
 
-        /** 页头：标题（20/28/500）+ 副标题（13/20 secondary）+ 数据源行（12/18 tertiary + 来源 Tag）。 */
-        const introText = pickLocalized(catalog !== undefined ? catalog.description : undefined, lang) || tt('page.subtitle')
-        const updated = catalog !== undefined && typeof catalog.updated === 'string' ? catalog.updated : ''
-        const head = h('header', { className: 'fs-pageHead', 'data-dsh-part': 'page-head' },
-          h('div', { className: 'fs-headMain' },
-            h('h1', { className: 'fs-title' }, tt('page.title')),
-            h('p', { className: 'fs-intro' }, introText),
-            h('p', { className: 'fs-sourceLine', 'data-dsh-part': 'source-line' },
-              h('span', { key: 'repo' }, tt('page.sourcePrefix') + ' ' + tt('page.sourceRepo')),
-              updated !== '' ? h('span', { key: 'updated' }, '· ' + tt('page.updated', { date: updated })) : null,
-              meta !== undefined ? h(P.Tag, { key: 'source', tone: metaSummary.tone }, tt(metaSummary.labelKey)) : null,
-            ),
+        /**
+         * 头部 banner：内联 SVG 标识（山花 + 檐口 + 立柱 + 地面线）+ 标题 + slogan + 右侧统计胶囊。
+         *
+         * 标识只用 currentColor 描边 / 半透明填充，颜色来自 token，因此明暗主题与黑白风格都成立；
+         * 不加载任何第三方图片（图标只有内联 SVG，bundle 里不存在 img 元素）。
+         */
+        const heroMark = h('span', { className: 'fs-heroMark', key: 'mark' },
+          h('svg', {
+            viewBox: '0 0 24 24',
+            width: 22,
+            height: 22,
+            fill: 'none',
+            stroke: 'currentColor',
+            strokeWidth: '1.4',
+            strokeLinecap: 'round',
+            strokeLinejoin: 'round',
+            'aria-hidden': 'true',
+          },
+            h('path', { key: 'pediment', d: 'M12 3.4 20 9.2H4z', fill: 'currentColor', fillOpacity: '0.12' }),
+            h('path', { key: 'cornice', d: 'M4.6 9.2h14.8' }),
+            h('path', { key: 'columns', d: 'M7.6 11.4v6.2M12 11.4v6.2M16.4 11.4v6.2' }),
+            h('path', { key: 'ground', d: 'M4.6 19.6h14.8' }),
+          ),
+        )
+        const hero = h('header', { className: 'fs-hero', 'data-dsh-part': 'hero' },
+          heroMark,
+          h('div', { className: 'fs-heroMain' },
+            h('h1', { className: 'fs-heroTitle' }, tt('page.title')),
+            h('p', { className: 'fs-heroSlogan' }, tt('hero.slogan')),
+          ),
+          h('span', { className: 'fs-heroSpacer' }),
+          // 条数用 tabular-nums：加载完成后胶囊宽度不跳动。
+          h('span', { className: 'fs-heroBadge', 'data-dsh-part': 'hero-badge' },
+            tt('hero.badge', { count: String(totalCount), categories: String(categories.length) }),
           ),
         )
 
-        /** 工具栏：官方 Input（搜索图标前置）+ 官方 SegmentedControl（全部插件 / 已安装 n）。 */
+        /**
+         * 一行元信息：数据源 · 更新 · 核验 · 「实时/非实时」· 刷新。
+         *
+         * 目录还没到手时日期位写「—」而不是整行消失，避免加载完成的瞬间版面上下一跳。
+         */
+        const updated = catalog !== undefined && typeof catalog.updated === 'string' ? catalog.updated : ''
+        const verified = catalog !== undefined && typeof catalog.verifiedAt === 'string' ? catalog.verifiedAt : ''
+        const placeholder = '—'
+        const metaRow = h('div', { className: 'fs-metaRow', 'data-dsh-part': 'meta-row' },
+          h('span', { className: 'fs-metaItem', key: 'source', 'data-dsh-part': 'source-line' },
+            h('span', { className: 'fs-metaKey' }, tt('page.sourcePrefix')),
+            h('span', { className: 'fs-metaVal' }, tt('page.sourceRepo')),
+          ),
+          h('span', { className: 'fs-metaDot', key: 'dot-updated', 'aria-hidden': 'true' }, '·'),
+          h('span', { className: 'fs-metaItem', key: 'updated', 'data-dsh-part': 'updated-line' },
+            h('span', { className: 'fs-metaVal' }, tt('page.updated', { date: updated !== '' ? updated : placeholder })),
+          ),
+          h('span', { className: 'fs-metaDot', key: 'dot-verified', 'aria-hidden': 'true' }, '·'),
+          h('span', { className: 'fs-metaItem', key: 'verified', 'data-dsh-part': 'verified-line' },
+            h('span', { className: 'fs-metaVal' }, tt('page.verified', { date: verified !== '' ? verified : placeholder })),
+          ),
+          meta !== undefined
+            ? h(P.Tag, { key: 'freshness', tone: metaSummary.live ? 'info' : 'warning', 'data-dsh-part': 'freshness' }, tt(metaSummary.live ? 'meta.live' : 'meta.stale'))
+            : null,
+          h('span', { className: 'fs-metaSpacer', key: 'spacer' }),
+          h('span', { className: 'fs-metaItem', key: 'refresh', 'data-dsh-part': 'refresh-action' },
+            h(P.Button, {
+              size: 'sm',
+              variant: 'ghost',
+              disabled: refreshing,
+              icon: h(P.IconRefreshOutlineRegular, { size: 16, className: refreshing ? 'fs-spin' : undefined }),
+              onClick: () => { load('refresh') },
+            }, refreshing ? tt('meta.refreshing') : tt('footer.refresh')),
+          ),
+        )
+
+        /** 工具栏：官方 Input（搜索图标前置，左对齐）+ 官方 SegmentedControl（全部插件 / 已安装 n，右对齐）。 */
         const viewOptions = [
           { value: VIEW_ALL, label: tt('filter.all') },
           { value: VIEW_INSTALLED, label: tt('filter.installed') + ' (' + installedCount + ')' },
@@ -1097,6 +1288,7 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__ !== undefined && ty
               },
             }),
           ),
+          h('div', { className: 'fs-toolbarSpacer' }),
           h(P.SegmentedControl, {
             id: PANEL_ID + '-view',
             value: view,
@@ -1104,8 +1296,10 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__ !== undefined && ty
             label: tt('filter.viewLabel'),
             onChange: (next) => { setView(next) },
           }),
-          h('div', { className: 'fs-toolbarSpacer' }),
         )
+
+        /** 横分割线：之后才是「分类胶囊 + 卡片网格」的工作区。 */
+        const divider = h('hr', { className: 'fs-divider', 'data-dsh-part': 'divider' })
 
         /** 分类条：官方 Pill，「全部」+ 9 类，每枚带条数（0 条也显示，不隐藏分类）。 */
         const countBadge = (count) => h('span', { className: 'fs-pillCount' }, String(count))
@@ -1128,17 +1322,16 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__ !== undefined && ty
           }, pickLocalized(entry.title, lang) || entry.id, countBadge(counts.byCategory[entry.id] || 0))),
         ]
 
-        /** 首次加载：3 行骨架 + TextShimmer 状态文案（都带 data-dsh-part 锚点）。 */
+        /** 首次加载：状态文案 + 6 张卡片骨架（都带 data-dsh-part 锚点）。 */
         let contentBody
         if (loading && catalog === undefined) {
           contentBody = h('div', { className: 'fs-skeletons', 'data-dsh-part': 'loading', role: 'status' },
             h('div', { className: 'fs-state' },
               h(P.TextShimmer, { active: true, className: 'fs-stateText' }, tt('state.loading')),
             ),
-            [0, 1, 2].map((index) => h('div', { className: 'fs-skeletonRow', key: 's' + index, 'aria-hidden': 'true' },
-              h('span', { className: 'fs-skeletonIcon' }),
-              h('span', { className: 'fs-skeletonLines' }),
-            )),
+            h('div', { className: 'fs-skeletonGrid', 'aria-hidden': 'true' },
+              [0, 1, 2, 3, 4, 5].map((index) => h('div', { className: 'fs-skeletonCard', key: 's' + index })),
+            ),
           )
         } else if (error !== undefined && catalog === undefined) {
           contentBody = h('div', { className: 'fs-state', 'data-dsh-part': 'load-error' },
@@ -1177,7 +1370,7 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__ !== undefined && ty
             notices.push(h('p', { className: 'fs-noticeOk', 'data-dsh-part': 'action-ok', key: 'action-ok' }, notice.text))
           }
           contentBody = h(React.Fragment, null,
-            toolbar,
+            notices.length > 0 ? h('div', { className: 'fs-notices', 'data-dsh-part': 'notices' }, notices) : null,
             h('div', {
               id: PANEL_ID + '-view-' + view + '-panel',
               className: 'fs-panelBody',
@@ -1186,11 +1379,10 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__ !== undefined && ty
               'data-dsh-part': 'view-panel',
             },
               h('div', { className: 'fs-categoryBar', 'data-dsh-part': 'category-bar' }, categoryPills),
-              notices,
               visible.length === 0
                 ? emptyState()
-                : h('ul', { className: 'fs-list', 'data-dsh-part': 'skill-list' },
-                  visible.map((skill) => h(SkillRow, {
+                : h('ul', { className: 'fs-grid', 'data-dsh-part': 'skill-grid' },
+                  visible.map((skill) => h(SkillCard, {
                     key: skill.id,
                     skill,
                     lang,
@@ -1235,8 +1427,11 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__ !== undefined && ty
           'data-dsh-plugin': 'financial-skills',
         },
           h('section', { className: 'fs-page', 'data-dsh-part': 'page' },
-            head,
-            h('div', { className: 'fs-content', 'data-dsh-part': 'content' },
+            h('div', { className: 'fs-shell', 'data-dsh-part': 'shell' },
+              hero,
+              metaRow,
+              toolbar,
+              divider,
               contentBody,
               catalog !== undefined ? footer : null,
             ),
@@ -1320,6 +1515,9 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__ !== undefined && ty
         relativeTime,
         panelId,
         panelLabel,
+        skillFieldPairs,
+        secondaryName,
+        invocationNameOf,
       }
       return module.exports
     },

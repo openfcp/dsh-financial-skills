@@ -3,9 +3,50 @@
 All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/), and this project follows [Semantic Versioning](https://semver.org/).
 
-## 未发布 / Unreleased
+## 0.2.0 — 2026-11-18
+
+这一版只解决一件事：**装得快、装得上、装完就能用**。界面同时按「banner → 元信息一行 → 搜索/视图 → 分割线 → 胶囊分类 → 技能卡片」重排。
+
+### 性能
+
+- **清单刷新快了一个数量级**：四个镜像从「串行降级、每条最长 8 秒」改成**错峰并行竞速**（首跳 0ms、之后每条错开 300ms，首个有效载荷胜出后立刻 abort 其余）。首发命中即返回，慢镜像不再拖住整次刷新。真机实测 `catalog: network 1559ms`（此前最坏要等满 4×22 秒）。
+- **ETag / 304 复用**：缓存里存下 `etag`，刷新时带 `If-None-Match`；命中 304 时只更新 `fetchedAt`，不再重写 189 KB 正文。
+- **stale-while-revalidate**：磁盘缓存过期时**先立即返回旧目录**，后台单飞重同步；页面不再为了等网络而空转。
+- **整仓 tarball 取件**：GitHub 来源改为先取 codeload 整仓 tar.gz（一次请求拿到整个技能目录），失败再退 contents API / raw / jsDelivr。真机实测 42 文件 720 KB 的技能不再需要逐文件请求（tarball 通道 15 秒预算，超时即回落，不会把安装拖成 80 秒）。
+- **批量写盘**：安装时按并发池（8 路）落盘，不再一个文件一次 `await`。
 
 ### 修复
+
+- **安装成功却在技能列表里找不到、调不出来**：根因是 `@deepseek-ai/dsh-skill-filesystem` 的发现契约——只认 `<root>/<name>/SKILL.md`，且 frontmatter 的 `name` 必须是 kebab-case、`description` 必填，**不合法的条目会被静默丢弃**（例如上游 `ai-ppt-skill` 写的是 `name: ppt-master`、`shinora` 写的是 `name: 白之`）。现在安装时对**本地落盘的那份 `SKILL.md`** 做归一化：非法 `name` 改写为目录 id、缺失 `description` 补技能摘要，修复项记进 `.financial-skills.json` 的 `frontmatterRepairs` 与 `invocationName`。**上游仓库一个字节都不动**（`openfcp/awesome-financial-skills` 同时被 WorkBuddy 与官网引用）。
+- **安装后要重启才生效**：安装/卸载成功立刻通知技能注册表——主通道 `skills.invalidateCache()`（bump revision + 清缓存 + 派发 `skills/change`），次级通道 `ctx.emit('fs/observed', path, …)`。两者都不可用时才退回 logger 告警。
+- **安装/卸载后的界面刷新**：静默重取目录，卡片边框与「已安装」标记即时变化。
+- **卡片显示调用名**：已安装且 frontmatter 调用名与技能 id 不同时，卡片上直接写出「调用名 `xxx`」，省得用户去猜该用哪个名字调用。
+
+### 变更（界面）
+
+- 版式按指定顺序重排：**头部 banner**（内联 22×22 线稿 SVG 标识 + 标题 + slogan + 右侧「N 个技能 · M 个分类」胶囊）→ **元信息一行**（数据源 · 更新 · 核验 · 实时/非实时 Tag · 刷新）→ **搜索框（左）+ 全部插件/已安装（右）** → **横分割线** → **胶囊分类** → **技能卡片网格**（`minmax(320px,1fr)`）。
+- 卡片：中文名 + **英文名**、两行摘要、**类别 / 版本 / 来源 / 协议 / 作者 / 核验日期**六项元信息；**去掉头像**（原 48px 首字盒）。
+- 卡片外边框：默认 `--dsw-alias-border-l2` 浅灰；**已安装换成 `--dsw-alias-state-success-primary`**（与卡片内「已安装」Tag 同色）。
+- **页脚（更新日期一览）保持原样**：更新日期 · 相对时间 · 条数 · 来源 Tag · 刷新。
+- 首屏更快立住：加载态就把 banner / 元信息行 / 搜索框 / 分割线画出来，只把内容区换成 6 张骨架卡，目录到手时不发生大幅跳版。
+- 新增 `docs/preview.html`：`node scripts/preview.mjs`（`npm run preview`）从 `client.js` 抽真实 CSS + 随包快照生成静态预览页，不启动宿主也能看版式（亮/暗跟随系统）；CI 增加「预览页不漂移」检查。
+- 0.1.x 的三张位图截图（`docs/preview*.png`）随版式改版移除，`screenshots.json` 置空——旧截图描述的是行列表版式，留着会误导读安装的人。需要在商店页展示位图时，在真实宿主里重拍后回填。
+
+### 新增
+
+- `docs/DESIGN.md` 全量对齐新版式（栅格、区域→原语→token 对照、状态矩阵、反模式清单）。
+- 测试增至 **91 个**（Host 65 + 浏览器半 26）：新增竞速/错峰/304 复用、tarball 取件与中文路径、frontmatter 归一化、注册表通知、版式顺序断言、卡片结构与六项元信息断言。
+
+### 升级说明
+
+git 依赖不会自动跟随仓库更新，`pnpm add <同一个地址>` 会命中「Already up to date」，插件管理器因此报
+`无法从依赖变更中确定安装了哪一个包`。升级请**改用带版本 tag 的地址**（推荐），或先卸载再安装：
+
+```
+https://github.com/openfcp/dsh-financial-skills#v0.2.0
+```
+
+### 其它修复（0.1.1 之后累积）
 
 - **GitHub 来源支持「技能就在仓库根」**：上游自 2026-11-17 起收录了一批根目录布局的仓库（`source.path: ""`）。此前归一化会把空 path 改写成 `plugins/<id>`，这些技能的详情与安装全部 404。现在空 path 原样保留，`resolve` 模板里的 `{path}` 会被真正替换掉（不再留下字面量 `{path}`），raw 地址也不会出现 `//`。
 - **支持 `source.exclude`**：上游对纯展示资源（`examples/`、`assets/showcase/`、`docs/` 等）声明了排除前缀，此前会被一并取回，容易撞上文件数 / 总量上限。现在按前缀跳过，与上游取件脚本 `install.py` 的行为一致。

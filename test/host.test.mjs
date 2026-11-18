@@ -14,7 +14,7 @@ import { mkdir, mkdtemp, readFile, readdir, rm, stat, writeFile } from 'node:fs/
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { test } from 'node:test'
-import { deflateRawSync } from 'node:zlib'
+import { deflateRawSync, gzipSync } from 'node:zlib'
 
 import { apply, inject, name, resolveConfig } from '../index.js'
 import {
@@ -34,6 +34,7 @@ import {
   DEFAULT_LIMITS,
   createStore,
   isWithinRoot,
+  normalizeSkillFrontmatter,
   parseFrontmatter,
   resolveDshHome,
   resolveInstallRoot,
@@ -192,6 +193,47 @@ function bufferResponse(buffer) {
       return buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength)
     },
   }
+}
+
+/** 造一个 ustar 头（够 GitHub 归档的普通文件用）。 */
+function tarHeader(name, size, typeFlag) {
+  const header = Buffer.alloc(512)
+  header.write(name, 0, 'utf8')
+  header.write('0000644\0', 100, 'utf8')
+  header.write('0001750\0', 108, 'utf8')
+  header.write('0001750\0', 116, 'utf8')
+  header.write(`${size.toString(8).padStart(11, '0')}\0`, 124, 'utf8')
+  header.write(`${Math.floor(Date.now() / 1000).toString(8).padStart(11, '0')}\0`, 136, 'utf8')
+  header.write('        ', 148, 'utf8')
+  header.write(typeFlag, 156, 'utf8')
+  header.write('ustar\0', 257, 'utf8')
+  header.write('00', 263, 'utf8')
+  let sum = 0
+  for (const byte of header) sum += byte
+  header.write(`${sum.toString(8).padStart(6, '0')}\0 `, 148, 'utf8')
+  return header
+}
+
+/**
+ * 造一个 tar.gz（`{ 'repo-main/SKILL.md': '正文' }` 这种 repo 根带前缀的形状）。
+ *
+ * @param {Record<string, string>} entries 路径 → 文本内容；值以 '/' 结尾视为目录。
+ * @returns {Buffer} tar.gz 字节。
+ */
+function buildTarGz(entries) {
+  const blocks = []
+  for (const [path, content] of Object.entries(entries)) {
+    const isDir = path.endsWith('/')
+    const body = isDir ? Buffer.alloc(0) : Buffer.from(content, 'utf8')
+    blocks.push(tarHeader(path, body.length, isDir ? '5' : '0'))
+    if (!isDir) {
+      blocks.push(body)
+      const pad = (512 - (body.length % 512)) % 512
+      if (pad > 0) blocks.push(Buffer.alloc(pad))
+    }
+  }
+  blocks.push(Buffer.alloc(1024))
+  return gzipSync(Buffer.concat(blocks))
 }
 
 /** 造一个可迭代的假请求。 */
@@ -482,29 +524,31 @@ test('catalog: github 根目录来源保留空 path，并透传 exclude', () => 
 // 目录抓取：镜像降级、缓存、快照、offline
 // ---------------------------------------------------------------------------
 
-test('catalog: 镜像链按契约顺序降级，成功后写磁盘缓存', async (t) => {
+test('catalog: 镜像并行竞速，首个有效载荷胜出并写磁盘缓存', async (t) => {
   const dir = await tempDir(t)
   const cacheFile = join(dir, 'catalog.cache.json')
   const raw = await snapshotRaw()
   const calls = []
-  const fetchImpl = async (url) => {
+  const respond = (url) => {
     calls.push(url)
-    if (calls.length === 1) throw new Error('raw 不可达')
-    if (calls.length === 2) return jsonResponse({ error: 'bad gateway' }, { status: 500 })
+    if (url === DEFAULT_INDEX_URLS[0]) throw new Error('raw 不可达')
+    if (url === DEFAULT_INDEX_URLS[1]) return jsonResponse({ error: 'bad gateway' }, { status: 500 })
     return jsonResponse(raw)
   }
   const catalog = createCatalog({
     indexUrls: DEFAULT_INDEX_URLS,
     cacheFile,
     snapshotFile: SNAPSHOT_FILE,
-    fetchImpl,
+    fetchImpl: async (url) => respond(url),
     timeoutMs: 1000,
+    hedgeDelayMs: 0,
   })
   const result = await catalog.load()
   assert.equal(result.meta.source, 'network')
   assert.equal(result.meta.stale, false)
   assert.equal(result.meta.offline, false)
-  assert.deepEqual(calls, DEFAULT_INDEX_URLS.slice(0, 3))
+  // 竞速 = 四条镜像同时问，谁先给出有效载荷用谁；失败的镜像不会拖住整体。
+  assert.deepEqual([...calls].sort(), [...DEFAULT_INDEX_URLS].sort())
   assert.equal(result.catalog.categories.length, 9)
   assert.equal(result.catalog.skills.length, raw.skills.length)
 
@@ -517,7 +561,85 @@ test('catalog: 镜像链按契约顺序降级，成功后写磁盘缓存', async
   assert.equal(peeked.fetchedAt, result.meta.fetchedAt)
 })
 
-test('catalog: 新鲜缓存直接命中；过期缓存先联网、失败后回缓存；offline 绝不联网', async (t) => {
+test('catalog: 首跳够快时不惊动后面的镜像（错峰 300ms 内不分叉）', async (t) => {
+  const dir = await tempDir(t)
+  const raw = await snapshotRaw()
+  const calls = []
+  const catalog = createCatalog({
+    indexUrls: DEFAULT_INDEX_URLS,
+    cacheFile: join(dir, 'catalog.cache.json'),
+    snapshotFile: SNAPSHOT_FILE,
+    timeoutMs: 5000,
+    fetchImpl: async (url) => {
+      calls.push(url)
+      return jsonResponse(raw)
+    },
+  })
+  const result = await catalog.load()
+  assert.equal(result.meta.source, 'network')
+  assert.equal(result.meta.url, DEFAULT_INDEX_URLS[0])
+  await new Promise((done) => setTimeout(done, 400))
+  assert.deepEqual(calls, [DEFAULT_INDEX_URLS[0]], '首跳成功就 abort 掉其余镜像，不再发请求')
+})
+
+test('catalog: 慢镜像不拖住后一跳——竞速总耗时接近最快那条', async (t) => {
+  const dir = await tempDir(t)
+  const raw = await snapshotRaw()
+  const catalog = createCatalog({
+    indexUrls: ['https://slow.invalid/catalog.json', 'https://fast.invalid/catalog.json'],
+    cacheFile: join(dir, 'catalog.cache.json'),
+    snapshotFile: SNAPSHOT_FILE,
+    timeoutMs: 5000,
+    hedgeDelayMs: 20,
+    fetchImpl: async (url) => {
+      if (url.includes('slow')) {
+        await new Promise((done) => setTimeout(done, 3000))
+        throw new Error('慢镜像超时')
+      }
+      return jsonResponse(raw)
+    },
+  })
+  const started = Date.now()
+  const result = await catalog.load()
+  const elapsed = Date.now() - started
+  assert.equal(result.meta.source, 'network')
+  assert.equal(result.meta.url, 'https://fast.invalid/catalog.json')
+  // 顺序降级要等 3s；竞速只等多一跳的错峰（20ms）+ 快镜像的往返。
+  assert.ok(elapsed < 1500, `耗时 ${elapsed}ms，应远小于慢镜像的 3000ms`)
+})
+
+test('catalog: 带 ETag 时 304 复用缓存正文，不重写数据', async (t) => {
+  const dir = await tempDir(t)
+  const cacheFile = join(dir, 'catalog.cache.json')
+  const raw = await snapshotRaw()
+  await writeFile(cacheFile, JSON.stringify({ version: 1, fetchedAt: Date.now() - 7 * 60 * 60 * 1000, etag: 'W/"abc"', data: raw }))
+  const seen = []
+  const catalog = createCatalog({
+    indexUrls: ['https://mirror.invalid/catalog.json'],
+    cacheFile,
+    snapshotFile: SNAPSHOT_FILE,
+    timeoutMs: 1000,
+    fetchImpl: async (url, init) => {
+      seen.push(init.headers['if-none-match'])
+      return {
+        ok: false,
+        status: 304,
+        headers: { get: () => null },
+        text: async () => '',
+      }
+    },
+  })
+  const before = Date.now()
+  const result = await catalog.load({ refresh: true })
+  assert.deepEqual(seen, ['W/"abc"'])
+  assert.equal(result.meta.source, 'network')
+  assert.equal(result.catalog.skills.length, raw.skills.length)
+  const cached = JSON.parse(await readFile(cacheFile, 'utf8'))
+  assert.ok(cached.fetchedAt >= before, '304 只把 fetchedAt 推到当下')
+  assert.equal(cached.data.skills.length, raw.skills.length)
+})
+
+test('catalog: 新鲜缓存直接命中；过期缓存先返回再后台重同步；offline 绝不联网', async (t) => {
   const dir = await tempDir(t)
   const cacheFile = join(dir, 'catalog.cache.json')
   const raw = await snapshotRaw()
@@ -543,6 +665,7 @@ test('catalog: 新鲜缓存直接命中；过期缓存先联网、失败后回�
   assert.equal(refreshed.meta.source, 'network')
   assert.equal(calls, 1)
 
+  // 过期缓存：立即返回（stale），网络在后台单飞重同步
   await writeFile(cacheFile, JSON.stringify({ version: 1, fetchedAt: Date.now() - 7 * 60 * 60 * 1000, data: raw }))
   calls = 0
   const stale = createCatalog({
@@ -558,8 +681,19 @@ test('catalog: 新鲜缓存直接命中；过期缓存先联网、失败后回�
   const staleResult = await stale.load()
   assert.equal(staleResult.meta.source, 'cache')
   assert.equal(staleResult.meta.stale, true)
-  assert.match(staleResult.meta.error, /网络中断/)
-  assert.equal(calls, 1)
+  assert.equal(staleResult.meta.revalidating, true)
+  assert.equal(staleResult.meta.error, undefined, '后台同步还没结束，不应把错误当成这次响应的结论')
+  const synced = await stale.revalidateInBackground()
+  assert.equal(synced, false, '网络挂了，后台同步应当失败')
+  assert.equal(calls, 1, '后台同步只发一次')
+  const afterFailure = JSON.parse(await readFile(cacheFile, 'utf8'))
+  assert.equal(afterFailure.data.skills.length, raw.skills.length, '同步失败不动缓存')
+
+  // refresh=1 且网络失败：回退过期缓存并且把错误讲清楚
+  const forced = await stale.load({ refresh: true })
+  assert.equal(forced.meta.source, 'cache')
+  assert.equal(forced.meta.stale, true)
+  assert.match(forced.meta.error, /网络中断/)
 
   await writeFile(cacheFile, JSON.stringify({ version: 1, fetchedAt: Date.now() - 7 * 60 * 60 * 1000, data: raw }))
   calls = 0
@@ -670,6 +804,7 @@ test('github: readPluginFile 第一条镜像失败后换下一条，全部失败
   const calls = []
   const source = createSource({
     timeoutMs: 1000,
+    tarball: false,
     fetchImpl: async (url) => {
       calls.push(url)
       if (calls.length === 1) throw new Error('raw down')
@@ -684,6 +819,7 @@ test('github: readPluginFile 第一条镜像失败后换下一条，全部失败
 
   const dead = createSource({
     timeoutMs: 1000,
+    tarball: false,
     fetchImpl: async () => {
       throw new Error('offline')
     },
@@ -723,6 +859,7 @@ test('github: 目录清单走 contents API 并缓存 30 分钟', async () => {
   const calls = []
   const source = createSource({
     timeoutMs: 1000,
+    tarball: false,
     fetchImpl: async (url) => {
       calls.push(url)
       if (url === 'https://api.github.com/repos/openfcp/awesome-financial-skills/contents/plugins/missing-skill?ref=main') {
@@ -740,6 +877,80 @@ test('github: 目录清单走 contents API 并缓存 30 分钟', async () => {
   // 不同目录不共享缓存；空目录映射为 not-found
   await assert.rejects(source.listPluginFiles('missing-skill'), (error) => error instanceof SourceError && error.code === 'not-found')
   assert.equal(calls.length, 2)
+})
+
+test('github: tarball 一次请求拿到整目录，读取不再发请求', async () => {
+  const archive = buildTarGz({
+    'repo-main/': '',
+    'repo-main/SKILL.md': '---\nname: demo\n---\n正文',
+    'repo-main/references/参考.md': '# 参考',
+    'repo-main/other-skill/SKILL.md': '不该出现',
+  })
+  const calls = []
+  const source = createSource({
+    timeoutMs: 1000,
+    fetchImpl: async (url) => {
+      calls.push(url)
+      if (!url.startsWith('https://codeload.github.com/')) throw new Error(`不该请求 ${url}`)
+      return bufferResponse(archive)
+    },
+  })
+  const coords = { repo: 'acme/demo', path: '', ref: 'main' }
+  const files = await source.listFiles(coords, DEFAULT_RESOLVE.github)
+  assert.deepEqual(
+    files.map((file) => file.path).sort(),
+    ['SKILL.md', 'other-skill/SKILL.md', 'references/参考.md'],
+  )
+  // 只看技能目录：把 path 指向 references 之外的那个技能
+  const skillFiles = await source.listFiles({ repo: 'acme/demo', path: 'other-skill', ref: 'main' }, DEFAULT_RESOLVE.github)
+  assert.deepEqual(skillFiles, [{ path: 'SKILL.md', size: Buffer.byteLength('不该出现') }])
+  const buffer = await source.readFile(coords, DEFAULT_RESOLVE.github, 'references/参考.md')
+  assert.equal(buffer.toString('utf8'), '# 参考')
+  assert.equal(calls.length, 1, '清单与正文共用同一次 tarball 下载')
+})
+
+test('github: tarball 里的中文路径与 exclude 一起生效', async () => {
+  const archive = buildTarGz({
+    'repo-main/SKILL.md': '# 正文',
+    'repo-main/examples/a.png': 'x',
+    'repo-main/参考/指南.md': '# 指南',
+  })
+  const source = createSource({
+    timeoutMs: 1000,
+    fetchImpl: async (url) => {
+      if (!url.startsWith('https://codeload.github.com/')) throw new Error(`不该请求 ${url}`)
+      return bufferResponse(archive)
+    },
+  })
+  const files = await source.listFiles(
+    { repo: 'acme/demo', path: '', ref: 'main' },
+    DEFAULT_RESOLVE.github,
+    { exclude: ['examples'] },
+  )
+  assert.deepEqual(files.map((file) => file.path).sort(), ['SKILL.md', '参考/指南.md'])
+})
+
+test('github: tarball 不可用时退回 contents API，且失败会被记住不再重试', async () => {
+  const calls = []
+  const source = createSource({
+    timeoutMs: 1000,
+    fetchImpl: async (url) => {
+      calls.push(url)
+      if (url.includes('codeload') || url.includes('/tarball/')) throw new Error('tarball 挂了')
+      return jsonResponse([{ name: 'SKILL.md', type: 'file', size: 10 }])
+    },
+  })
+  const coords = { repo: 'acme/demo', path: 'skills/demo', ref: 'main' }
+  const files = await source.listFiles(coords, DEFAULT_RESOLVE.github)
+  assert.deepEqual(files, [{ path: 'SKILL.md', size: 10 }])
+  const tarballCalls = calls.filter((url) => url.includes('codeload') || url.includes('/tarball/')).length
+  assert.equal(tarballCalls, 2, 'codeload 与 api tarball 各试一次')
+  const before = calls.length
+  await source.listFiles({ repo: 'acme/other', path: 'skills/demo', ref: 'main' }, DEFAULT_RESOLVE.github)
+  const added = calls.slice(before)
+  assert.equal(added.filter((url) => url.includes('codeload') || url.includes('/tarball/')).length, 2, '另一个仓库仍然会试 tarball')
+  await source.listFiles(coords, DEFAULT_RESOLVE.github)
+  assert.equal(calls.filter((url) => url.includes('codeload')).length, 2, '同仓库失败只试一次，不会每次都等超时')
 })
 
 test('github: fixture 模式从磁盘读写，不引用 fetch', async (t) => {
@@ -1183,7 +1394,11 @@ test('store: github 来源按坐标走 contents API + raw（raw 500 后回落 js
   const result = await store.install('official-source-qa', descriptor)
   assert.equal(result.files, 2)
   assert.equal(result.version, '1.0.0')
-  assert.equal(await readFile(join(installRoot, 'official-source-qa', 'SKILL.md'), 'utf8'), '# 正文')
+  // 上游没写 frontmatter：安装时补 name/description，否则宿主发现不了这条技能
+  assert.equal(
+    await readFile(join(installRoot, 'official-source-qa', 'SKILL.md'), 'utf8'),
+    '---\nname: official-source-qa\ndescription: official-source-qa\n---\n\n# 正文',
+  )
   assert.equal(await readFile(join(installRoot, 'official-source-qa', 'package.json'), 'utf8'), '{}')
 
   const provenance = JSON.parse(await readFile(join(installRoot, 'official-source-qa', '.financial-skills.json'), 'utf8'))
@@ -1227,7 +1442,10 @@ test('store: github 根目录来源（path 为空）装到 <id>/，exclude 目�
   })
 
   assert.equal(result.files, 1)
-  assert.equal(await readFile(join(installRoot, 'root-skill', 'SKILL.md'), 'utf8'), '# 根目录')
+  assert.equal(
+    await readFile(join(installRoot, 'root-skill', 'SKILL.md'), 'utf8'),
+    '---\nname: root-skill\ndescription: root-skill\n---\n\n# 根目录',
+  )
   assert.equal(existsSync(join(installRoot, 'root-skill', 'examples')), false)
   assert.equal(calls.some((url) => url.includes('poster.png')), false)
 
@@ -1356,7 +1574,11 @@ test('store: skillhub 来源下载 zip 安装，provenance 带来源坐标', asy
   assert.equal(result.license, 'proprietary')
   assert.equal(calls.length, 1)
   assert.equal(calls[0], 'https://api.skillhub.cn/api/v1/download?slug=compliance-sales')
-  assert.equal(await readFile(join(installRoot, 'compliance-sales', 'SKILL.md'), 'utf8'), '---\nname: compliance-sales\n---\n# 合规销售')
+  // 原 frontmatter 只有 name、没有 description：安装时补上（否则宿主会丢弃整条技能）
+  assert.equal(
+    await readFile(join(installRoot, 'compliance-sales', 'SKILL.md'), 'utf8'),
+    '---\nname: compliance-sales\ndescription: compliance-sales\n---\n# 合规销售',
+  )
 
   const provenance = JSON.parse(await readFile(join(installRoot, 'compliance-sales', '.financial-skills.json'), 'utf8'))
   assert.equal(provenance.sourceType, 'skillhub')
@@ -1394,7 +1616,7 @@ test('store: uninstall 把技能移入 .trash 而不是删除，二次卸载 404
   assert.equal(existsSync(join(installRoot, 'official-source-qa')), false)
   const statInfo = await stat(join(removed.trashedTo, 'SKILL.md'))
   assert.equal(statInfo.isFile(), true)
-  assert.equal(await readFile(join(removed.trashedTo, 'SKILL.md'), 'utf8'), '# 正文')
+  assert.match(await readFile(join(removed.trashedTo, 'SKILL.md'), 'utf8'), /^---\nname: official-source-qa\ndescription: official-source-qa\n---\n\n# 正文$/)
 
   await assert.rejects(store.uninstall('official-source-qa'), (error) => error instanceof StoreError && error.code === 'not-found' && error.status === 404)
   await assert.rejects(store.uninstall('Bad_Id'), (error) => error instanceof StoreError && error.code === 'invalid-id')
@@ -1420,6 +1642,89 @@ const SKILL_MARKDOWN = `---\nname: dyz-gongwen-skills\ndescription: 官方口径
 const SKILL_PACKAGE = '{"name":"dyz-gongwen-skills"}'
 
 /** 造一套路由依赖（offline + 快照目录 + fixture 安装源，全程零网络）。 */
+// ---------------------------------------------------------------------------
+// 技能发现契约：frontmatter 归一化 + 装完立刻生效
+// ---------------------------------------------------------------------------
+
+test('store: SKILL.md frontmatter 归一化——非法 name 改写、缺失 description 补齐', () => {
+  const withBadName = normalizeSkillFrontmatter('---\nname: PPT Master\n---\n# 正文', { id: 'ai-ppt-skill', fallbackDescription: '做 PPT' })
+  assert.equal(withBadName.invocationName, 'ai-ppt-skill')
+  assert.equal(withBadName.changed, true)
+  assert.match(withBadName.content, /^---\nname: ai-ppt-skill\n/)
+  assert.match(withBadName.content, /description: 做 PPT/)
+  assert.match(withBadName.content, /# 正文$/)
+
+  const noHeader = normalizeSkillFrontmatter('# 只有正文', { id: 'plain-skill' })
+  assert.equal(noHeader.invocationName, 'plain-skill')
+  assert.equal(noHeader.content, '---\nname: plain-skill\ndescription: plain-skill\n---\n\n# 只有正文')
+
+  const alreadyGood = normalizeSkillFrontmatter('---\nname: good-skill\ndescription: 没问题\n---\n# 正文', { id: 'good-skill' })
+  assert.equal(alreadyGood.changed, false, '本来合法就不该动上游正文')
+  assert.equal(alreadyGood.content, '---\nname: good-skill\ndescription: 没问题\n---\n# 正文')
+
+  // 中文 name 也不合法（宿主按 kebab-case 校验），同样改写
+  const chinese = normalizeSkillFrontmatter('---\nname: 白之\ndescription: 海报\n---\n# 正文', { id: 'shinora' })
+  assert.equal(chinese.invocationName, 'shinora')
+  assert.match(chinese.content, /name: shinora/)
+
+  // 块标量 description 视为已填，不要覆盖
+  const block = normalizeSkillFrontmatter('---\nname: demo\ndescription: |\n  第一行\n  第二行\n---\n# 正文', { id: 'demo' })
+  assert.equal(block.changed, false)
+})
+
+test('store: 安装时把非法 frontmatter 归一化，并在 provenance 里记下调用名与修复项', async (t) => {
+  const fixture = await makeFixtureRepo(t, {
+    'demo-skill': {
+      'SKILL.md': '---\nname: Demo Skill\n---\n# 正文',
+    },
+  })
+  const { dir, installRoot, store } = await makeStore(t, fixture)
+  const result = await store.install('demo-skill', {
+    version: '1.0.0',
+    license: 'MIT',
+    summary: '演示技能',
+    source: { type: 'github', repo: 'acme/demo', path: '', ref: 'main', vendored: false },
+    resolve: DEFAULT_RESOLVE,
+  })
+  assert.equal(result.invocationName, 'demo-skill')
+  const written = await readFile(join(installRoot, 'demo-skill', 'SKILL.md'), 'utf8')
+  assert.match(written, /^---\nname: demo-skill\n/)
+  assert.match(written, /description: 演示技能/)
+  const provenance = JSON.parse(await readFile(join(installRoot, 'demo-skill', '.financial-skills.json'), 'utf8'))
+  assert.equal(provenance.invocationName, 'demo-skill')
+  assert.ok(Array.isArray(provenance.frontmatterRepairs) && provenance.frontmatterRepairs.length > 0)
+  assert.equal(existsSync(join(dir, 'skills', 'demo-skill', 'SKILL.md')), true)
+})
+
+test('routes: 安装 / 卸载后通知技能注册表（带上落盘路径）', async (t) => {
+  const seen = []
+  const harness = await createHarness(t, {
+    notifyMutation: async (paths) => {
+      seen.push(paths)
+      return { invalidated: true, announced: true }
+    },
+  })
+  const install = await callRoute(harness.routes, ROUTES.install, { method: 'POST', body: { id: 'dyz-gongwen-skills' } })
+  assert.equal(install.status, 200)
+  assert.equal(seen.length, 1)
+  assert.equal(seen[0].length, 1)
+  assert.match(seen[0][0], /dyz-gongwen-skills$/)
+
+  const uninstall = await callRoute(harness.routes, ROUTES.uninstall, { method: 'POST', body: { id: 'dyz-gongwen-skills' } })
+  assert.equal(uninstall.status, 200)
+  assert.equal(seen.length, 2)
+  assert.match(seen[1][0], /\.trash/)
+})
+
+test('routes: 没有 notifyMutation 时退回 getSkills().invalidateCache()', async (t) => {
+  let invalidated = 0
+  const harness = await createHarness(t, {
+    getSkills: () => ({ invalidateCache: () => { invalidated += 1 } }),
+  })
+  await callRoute(harness.routes, ROUTES.install, { method: 'POST', body: { id: 'dyz-gongwen-skills' } })
+  assert.equal(invalidated, 1)
+})
+
 async function createHarness(t, options = {}) {
   const repo = await makeFixtureRepo(
     t,
@@ -1467,6 +1772,7 @@ async function createHarness(t, options = {}) {
     store,
     config,
     getSkills: options.getSkills ?? (() => undefined),
+    notifyMutation: options.notifyMutation,
     logger: { warn() {} },
     version: '0.1.0-test',
   })

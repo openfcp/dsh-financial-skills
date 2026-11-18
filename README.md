@@ -10,18 +10,15 @@
 [![dsh](https://img.shields.io/badge/dsh-%3E%3D0.2.0--rc.2-4f46e5)](package.json)
 [![node](https://img.shields.io/badge/node-%3E%3D20-339933)](package.json)
 
-![金融技能页面预览 · 浅色](docs/preview.png)
+<p align="center"><strong>版式预览</strong>：打开 <a href="docs/preview.html"><code>docs/preview.html</code></a>
+（`npm run preview` 从 `client.js` 抽真实 CSS + 随包快照重新生成，亮/暗跟随系统）</p>
 
-<p align="center"><sub>浅色主题：侧栏「金融技能」入口 + 「金融行业skills精选」整页；截图取自隔离
-DSH 实例的真实浏览器渲染（1440×900）。</sub></p>
+```sh
+npm run preview && open docs/preview.html
+```
 
-![金融技能页面预览 · 暗色](docs/preview-dark.png)
-
-<p align="center"><sub>暗色主题：颜色全部来自宿主 <code>--dsw-*</code> token，插件不覆盖主题。</sub></p>
-
-![已安装视图](docs/preview-installed.png)
-
-<p align="center"><sub>「已安装」视图：装好的技能带绿色「已安装」标签，动作变为「卸载」。</sub></p>
+> 预览页与宿主用同一份 CSS、同一套 `--dsw-*` token，只是把原语（Button / Input / Tag / Pill）画成等价外观。
+> 0.1.x 的三张位图截图已随版式改版移除；需要位图时在真实宿主里重拍并回填 `screenshots.json`。
 
 ---
 
@@ -47,11 +44,42 @@ DSH 实例的真实浏览器渲染（1440×900）。</sub></p>
 ## 装完你会看到什么
 
 1. 打开 DSH，左侧栏多出「金融技能」入口（图标是银行建筑线条：三角山墙 + 三根柱子 + 地面线，16×16 stroke 风格）；
-2. 点击后，右侧主区整页变成「金融行业skills精选」：顶部标题 + 副标题，下面是搜索框、9 个分类胶囊、全部/已安装切换；
-3. 技能按分类列出，每条显示名称、摘要、分类、版本、来源（许可证在详情里如实显示）；
-4. 点名称打开详情弹窗：SKILL.md 正文（Markdown 渲染）、文件清单、总大小、许可证与来源坐标；
-5. 点「安装」，技能被写进本地技能目录，按钮变成「已安装 / 卸载」；
-6. 点「卸载」，技能目录被移到 `.trash`（不直接删除，可手动找回）。
+2. 点击后，右侧主区整页变成「金融行业skills精选」：最上面是 banner（标识 + 标题 + slogan + 「N 个技能 · M 个分类」），下面一行是**数据源 · 更新日期 · 核验日期 · 实时/非实时 · 刷新**；
+3. 再下一行是**搜索框（左）+ 全部插件/已安装（右）**，一条横分割线之后是**胶囊分类**；
+4. 下面是**技能卡片网格**：中文名 + 英文名、两行摘要、类别 / 版本 / 来源 / 协议 / 作者 / 核验日期六项元信息。卡片默认**浅灰外边框**，**已安装的换另一种颜色**并标出「已安装」；
+5. 点名称打开详情弹窗：SKILL.md 正文（Markdown 渲染）、文件清单、总大小、许可证与来源坐标；
+6. 点「安装」，技能被写进本地技能目录，卡片边框即时变色、按钮变成「卸载」，**当前对话的技能列表里马上能调用它**（已安装卡片会写出「调用名」）；
+7. 点「卸载」，技能目录被移到 `.trash`（不直接删除，可手动找回）；
+8. 最下面是更新日期一览（更新日期 · 相对时间 · 条数 · 来源 · 刷新）。
+
+> 不想先装再看？`node scripts/preview.mjs` 会从 `client.js` 抽真实 CSS 生成 `docs/preview.html`，
+> 用浏览器直接打开即可看到与宿主一致的版式（亮/暗跟随系统）。
+
+## 从网址一键安装（插件管理器）
+
+在 DSH 的「插件 → 安装插件 → Git 仓库」里填这个地址（**带版本 tag**）：
+
+```
+https://github.com/openfcp/dsh-financial-skills#v0.2.0
+```
+
+装完会出现在插件列表里，**彻底重启**（Cmd+Q 后重开）即可看到侧栏「金融技能」。
+
+> ### 为什么要带 `#v0.2.0`，以及「无法从依赖变更中确定安装了哪一个包」是怎么回事
+>
+> git 依赖不带 ref 时，pnpm 会把仓库默认分支的**某个 commit 钉进 lockfile**。再次点安装时，它解析出同一个
+> commit，于是输出 `Already up to date`、`package.json` 没有任何变化；插件管理器靠「依赖前后差了什么」来
+> 认领刚装的是哪个包，差集为空就只能报 `无法从依赖变更中确定安装了哪一个包`。
+>
+> 这不是插件坏了，也不是地址写错——**它已经装着了**。所以：
+>
+> | 你的处境 | 该怎么做 |
+> | --- | --- |
+> | 已经装过旧版，想升级 | 用带新 tag 的地址（`#v0.2.0`）重新安装：spec 变了，pnpm 才会真的动 lockfile |
+> | 想重装同一版本 | 先在插件列表里**卸载**，再用同一地址安装 |
+> | 想一直跟最新 | 填 `#main`；但上游没新提交时仍会 `Already up to date`，报同一句提示，属正常 |
+>
+> 想确认当前装的是哪一版：看 `~/.dsh/profiles/desktop/node_modules/dsh-financial-skills/package.json` 的 `version`。
 
 ## 快速安装（3 步）
 
@@ -108,15 +136,36 @@ dsh plugin --profile desktop remove dsh-financial-skills
 
 然后同样**彻底重启**。通过本插件安装过的技能目录（`<DSH_HOME>/skills/<id>/`）属于用户数据，卸载插件不会删除；需要的话在插件里点「卸载」或手动删除。
 
+## 升级
+
+git 依赖**不会自动跟随仓库更新**——`pnpm add <同一个地址>` 只会回一句 `Already up to date`。升级走这条路：
+
+```sh
+# 1. 换成新 tag 的地址（spec 变了，pnpm 才会重新解析、lockfile 才会变）
+dsh plugin --profile desktop add https://github.com/openfcp/dsh-financial-skills#v0.2.0
+# 2. 彻底重启（Cmd+Q 后重开）
+```
+
+或者先卸再装：
+
+```sh
+./scripts/uninstall-local.sh desktop
+./scripts/install-local.sh desktop      # 本地开发用 link:，改完代码重启即生效
+```
+
+> 每次发布都会打 `vX.Y.Z` tag，`CHANGELOG.md` 里写清该版的改动与升级方式。**装完的技能目录不会被插件升级影响**；
+> 但如果你升级后想用新版 frontmatter 归一化修好的调用名，把对应技能「卸载 → 重新安装」一次即可。
+
 ## 功能
 
 | 功能 | 说明 |
 | --- | --- |
 | 搜索 | 按 id / 中文名 / 英文名 / 摘要 / 标签 / 作者匹配，大小写不敏感，输入即筛；与分类、已安装筛选叠加。 |
 | 分类筛选 | 一行 9 个官方 `Pill`（含「全部」与每类数量）；空分类仍显示，点开提示「该分类暂无工具」。 |
-| 已安装视图 | 官方 `SegmentedControl` 切换「全部插件 / 已安装 (n)」，已安装条目带 success 标签。 |
-| 详情预览 | 官方 `Modal` + `MarkdownText` 渲染 SKILL.md 正文（截断 64KB），附文件清单、总大小、license、版本与来源坐标（列表行不展示 license，详情里如实显示）。 |
-| 一键安装 | 按 id 和清单坐标取回正文：SkillHub 走 zip 下载解压，GitHub 走 raw → API → jsDelivr；校验后整目录改名落位，失败清理暂存不留痕。 |
+| 已安装视图 | 官方 `SegmentedControl` 切换「全部插件 / 已安装 (n)」；已安装卡片换用 success 色外边框并带「已安装」标签。 |
+| 卡片元信息 | 类别 / 版本 / 来源 / 协议 / 作者 / 最近核验日期六项，缺值写「未标注」而不是留空；已安装卡片额外显示 frontmatter 里的**调用名**。 |
+| 详情预览 | 官方 `Modal` + `MarkdownText` 渲染 SKILL.md 正文（截断 64KB），附文件清单、总大小、license、版本与来源坐标（卡片只给概要，详情里如实显示全部）。 |
+| 一键安装 | 按 id 和清单坐标取回正文：SkillHub 走 zip 下载解压，GitHub 优先整仓 tarball（失败退 contents API / raw / jsDelivr）；校验后整目录改名落位，失败清理暂存不留痕。装完**立即通知技能注册表**，当前对话就能调用。 |
 | 一键卸载 | 移动到 `<DSH_HOME>/skills/.trash/<id>-<时间戳>/`，不直接删除。 |
 | 离线快照 | 网络不可用或源站降级时回落到随包 `catalog.snapshot.json`；页面页脚**如实标注** `source: network / cache / snapshot` 与是否过期，绝不把快照说成实时。 |
 | 刷新 | 页脚「刷新」按钮请求 `GET /api/financial-skills/catalog?refresh=1`，失败以错误行展示。 |
