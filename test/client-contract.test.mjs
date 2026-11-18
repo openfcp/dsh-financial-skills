@@ -826,6 +826,30 @@ test('渲染：banner / 元信息一行 / 搜索+视图 / 分割线 / 10 枚分�
     assert.ok(heroText.includes(TOTAL_SKILLS + ' 个技能'), 'banner 右侧统计技能条数')
     assert.ok(heroText.includes(fixture.catalog.categories.length + ' 个分类'), 'banner 右侧统计分类数')
 
+    // 1b. 标识：四块圆角方 + 各自的凸榫，灰白（currentColor + 分档透明度），不用品牌色
+    const mark = elements(hero[0], (node) => node.props !== undefined && node.props.className === 'fs-heroMark')[0]
+    assert.ok(mark !== undefined, 'banner 必须有标识')
+    const markSvg = elements(mark, (node) => node.type === 'svg')[0]
+    assert.equal(markSvg.props.fill, 'currentColor', '标识颜色必须继承 currentColor（灰白由 token 给）')
+    assert.equal(markSvg.props.stroke, undefined, '标识是实心块面，不描边')
+    const groups = elements(markSvg, (node) => node.type === 'g')
+    assert.equal(groups.length, 4, '四块方')
+    assert.deepEqual(groups.map((group) => group.props.opacity), [0.9, 0.62, 0.38, 0.7], '四档深浅构成灰白层次')
+    for (const group of groups) {
+      const rects = elements(group, (node) => node.type === 'rect')
+      const knobs = elements(group, (node) => node.type === 'circle')
+      assert.equal(rects.length, 1, '每块一个圆角方')
+      assert.equal(knobs.length, 1, '每块一个凸榫')
+      assert.equal(rects[0].props.rx, 3, '圆角方走 rx=3')
+    }
+    // 凸榫朝外：左上朝右、右上朝下、左下朝上、右下朝左
+    const knobCenters = groups.map((group) => {
+      const knob = elements(group, (node) => node.type === 'circle')[0]
+      return [knob.props.cx, knob.props.cy]
+    })
+    assert.deepEqual(knobCenters, [[10.8, 6.05], [17.95, 10.8], [6.05, 13.2], [13.2, 17.95]], '四个凸榫各自贴在方的一侧')
+    assert.equal(/\.fs-heroMark\{[^}]*color:var\(--dsw-alias-label-secondary\)/.test(client.appended[0].textContent), true, '标识必须是灰色调，不用品牌色')
+
     // 2. 元信息一行：数据源 · 更新 ·「实时/非实时」+ 紧贴其右的红色刷新按钮
     const metaRow = byPart(tree, 'meta-row')
     assert.equal(metaRow.length, 1, '必须有元信息一行')
@@ -1007,17 +1031,34 @@ test('渲染：长条卡片 = 中文名 + 英文名 + 单行摘要 + 四枚胶�
       { text: '安装', variant: 'primary', size: 'sm' },
     ])
 
-    // 已安装卡片：success Tag + 调用名 + ghost 卸载
+    // 已安装卡片：「已安装」标签落在调用名行最前面（标题行不再占位）
     const installed = cards.find((card) => card.props.skill.installed === true)
     const installedProps = Object.assign({}, installed.props, {
       skill: Object.assign({}, installed.props.skill, { installedInvocationName: 'consumer-review' }),
     })
     const installedTree = client.mini.render(installed.type, installedProps)
     assert.equal(installedTree.props['data-installed'], 'true')
-    assert.equal(elements(installedTree, (node) => node.type === client.primitives.Tag && node.props.tone === 'success').length, 1)
+    const installedHead = elements(installedTree, (node) => node.props !== undefined && node.props.className === 'fs-cardHead')[0]
+    assert.equal(elements(installedHead, (node) => node.type === client.primitives.Tag).length, 0, '标题行不再放「已安装」标签')
     const invoke = elements(installedTree, (node) => node.props !== undefined && node.props['data-dsh-part'] === 'card-invocation')
     assert.equal(invoke.length, 1, '已安装卡片亮出调用名')
+    assert.equal(elements(installedTree, (node) => node.type === client.primitives.Tag && node.props.tone === 'success').length, 1)
+    const invokeChildren = invoke[0].children.filter((node) => node !== null && node !== undefined)
+    assert.equal(invokeChildren[0].type, client.primitives.Tag, '「已安装」标签是调用名行的第一个元素')
+    assert.equal(invokeChildren[0].props['data-dsh-part'], 'installed-tag')
+    assert.equal(textOf(invokeChildren[0]), '已安装')
+    assert.ok(textOf(invoke[0]).indexOf('已安装') < textOf(invoke[0]).indexOf('调用名'), '标签在「调用名」前面')
     assert.ok(textOf(invoke[0]).includes('consumer-review'))
+    const invokeCode = elements(invoke[0], (node) => node.props !== undefined && node.props.className === 'fs-cardInvokeCode')
+    assert.equal(invokeCode.length, 1)
+
+    // 老安装（0.1.x）没有 provenance 里的调用名：标签照留，用一句可操作的话兜住
+    const noInvocationTree = client.mini.render(installed.type, installed.props)
+    const noInvocationRow = elements(noInvocationTree, (node) => node.props !== undefined && node.props['data-dsh-part'] === 'card-invocation')
+    assert.equal(noInvocationRow.length, 1, '没有调用名时这一行仍然在（标签不能凭空空掉）')
+    assert.equal(elements(noInvocationRow[0], (node) => node.type === client.primitives.Tag && node.props.tone === 'success').length, 1)
+    assert.ok(textOf(noInvocationRow[0]).includes('调用名未记录'), '缺调用名时给出可操作提示')
+    assert.equal(elements(noInvocationRow[0], (node) => node.props !== undefined && node.props.className === 'fs-cardInvokeCode').length, 0)
     const installedButtons = elements(installedTree, (node) => node.type === client.primitives.Button)
       .map((node) => ({ text: textOf(node), variant: node.props.variant }))
     assert.deepEqual(installedButtons, [

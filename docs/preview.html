@@ -79,7 +79,8 @@ html,body{margin:0;padding:0;background:var(--dsw-alias-bg-base);color:var(--dsw
 
 /* 头部 banner：内联 SVG 标识 + 标题 + slogan，右侧一枚统计胶囊 */
 .fs-hero{position:relative;display:flex;align-items:center;gap:16px;min-width:0;padding:22px 24px;overflow:hidden;border:.5px solid var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-xl);background:var(--dsw-alias-bg-layer-1)}
-.fs-heroMark{position:relative;display:inline-flex;flex:none;align-items:center;justify-content:center;width:44px;height:44px;border:.5px solid var(--dsw-alias-border-l3);border-radius:var(--dsw-radius-lg);background:var(--dsw-alias-bg-layer-2);color:var(--dsw-alias-brand-primary)}
+/* 标识：灰白色调的四块带凸榫圆角方，颜色全部由 currentColor + 透明度推出，亮/暗主题自动跟随 */
+.fs-heroMark{position:relative;display:inline-flex;flex:none;align-items:center;justify-content:center;width:44px;height:44px;border:.5px solid var(--dsw-alias-border-l3);border-radius:var(--dsw-radius-lg);background:var(--dsw-alias-bg-layer-2);color:var(--dsw-alias-label-secondary)}
 .fs-heroMain{display:flex;flex-direction:column;gap:2px;min-width:0}
 .fs-heroTitle{margin:0;font-size:19px;font-weight:600;line-height:26px;letter-spacing:.2px}
 .fs-heroSlogan{margin:0;font-size:12.5px;line-height:18px;color:var(--dsw-alias-label-secondary)}
@@ -129,7 +130,6 @@ html,body{margin:0;padding:0;background:var(--dsw-alias-bg-base);color:var(--dsw
 .fs-cardName{min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border:0;background:0 0;color:inherit;font:inherit;font-size:14.5px;font-weight:600;line-height:21px;text-align:left;cursor:pointer;padding:0}
 .fs-cardName:hover{text-decoration:underline;text-underline-offset:3px}
 .fs-cardNameEn{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary);font-size:11.5px;line-height:16px}
-.fs-cardBadge{flex:none;display:inline-flex;align-items:center;margin-left:2px}
 .fs-cardSummary{display:-webkit-box;overflow:hidden;-webkit-box-orient:vertical;-webkit-line-clamp:1;margin:0;color:var(--dsw-alias-label-tertiary);font-size:12px;line-height:18px}
 /* 类别 / 来源 / 版本 / 协议 → 胶囊；作者 / 核验日期 → 纯文本 */
 .fs-cardMeta{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin:0;min-width:0}
@@ -140,6 +140,7 @@ html,body{margin:0;padding:0;background:var(--dsw-alias-bg-base);color:var(--dsw
 .fs-cardFactVal{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-secondary)}
 .fs-cardInvoke{display:flex;align-items:center;gap:6px;min-width:0;font-size:11.5px;line-height:16px;color:var(--dsw-alias-state-success-primary)}
 .fs-cardInvokeCode{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--ds-font-family-code,ui-monospace,monospace);font-size:11.5px}
+.fs-cardInvokeMuted{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary);font-size:11.5px;line-height:16px}
 .fs-cardActions{display:flex;flex:none;align-items:center;gap:6px}
 /* 窄容器：长条卡改为上下两段（信息在上、动作在下），不挤成一坨 */
 @media (max-width:720px){
@@ -196,11 +197,11 @@ html,body{margin:0;padding:0;background:var(--dsw-alias-bg-base);color:var(--dsw
 
       <header class="fs-hero" data-dsh-part="hero">
         <span class="fs-heroMark">
-          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M12 3.4 20 9.2H4z" fill="currentColor" fill-opacity="0.12"></path>
-            <path d="M4.6 9.2h14.8"></path>
-            <path d="M7.6 11.4v6.2M12 11.4v6.2M16.4 11.4v6.2"></path>
-            <path d="M4.6 19.6h14.8"></path>
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true">
+            <g opacity="0.9"><rect x="1.3" y="1.3" width="9.5" height="9.5" rx="3"></rect><circle cx="10.8" cy="6.05" r="1.9"></circle></g>
+            <g opacity="0.62"><rect x="13.2" y="1.3" width="9.5" height="9.5" rx="3"></rect><circle cx="17.95" cy="10.8" r="1.9"></circle></g>
+            <g opacity="0.38"><rect x="1.3" y="13.2" width="9.5" height="9.5" rx="3"></rect><circle cx="6.05" cy="13.2" r="1.9"></circle></g>
+            <g opacity="0.7"><rect x="13.2" y="13.2" width="9.5" height="9.5" rx="3"></rect><circle cx="13.2" cy="17.95" r="1.9"></circle></g>
           </svg>
         </span>
         <div class="fs-heroMain">
@@ -250,7 +251,6 @@ html,body{margin:0;padding:0;background:var(--dsw-alias-bg-base);color:var(--dsw
           <div class="fs-cardHead">
             <button type="button" class="fs-cardName">消保审查</button>
             <span class="fs-cardNameEn">Consumer Protection Review</span>
-            <span class="fs-cardBadge"><span class="pv-tag pv-tag-success">已安装</span></span>
           </div>
           <p class="fs-cardSummary" title="营销材料、协议条款、定价方案、销售话术的合规审查：六维审查模型、八项权益映射、风险定级与法规依据库。">营销材料、协议条款、定价方案、销售话术的合规审查：六维审查模型、八项权益映射、风险定级与法规依据库。</p>
           <div class="fs-cardMeta">
@@ -265,7 +265,7 @@ html,body{margin:0;padding:0;background:var(--dsw-alias-bg-base);color:var(--dsw
               <span class="fs-cardFact"><span class="fs-cardFactKey">核验日期</span><span class="fs-cardFactVal" title="2026-11-18">2026-11-18</span></span>
             </span>
           </div>
-          <p class="fs-cardInvoke"><span>调用名</span><code class="fs-cardInvokeCode">consumer-protection-re</code></p>
+          <p class="fs-cardInvoke"><span class="pv-tag pv-tag-success">已安装</span><span>调用名</span><code class="fs-cardInvokeCode">consumer-protection-re</code></p>
         </div>
         <div class="fs-cardActions">
           <button type="button" class="pv-btn pv-btn-ghost pv-btn-sm">详情</button>
@@ -277,7 +277,6 @@ html,body{margin:0;padding:0;background:var(--dsw-alias-bg-base);color:var(--dsw
           <div class="fs-cardHead">
             <button type="button" class="fs-cardName">消保评价</button>
             <span class="fs-cardNameEn">Consumer Protection Evaluation</span>
-            <span class="fs-cardBadge"><span class="pv-tag pv-tag-success">已安装</span></span>
           </div>
           <p class="fs-cardSummary" title="年度消保监管评价自评全流程：指标解读、台账分工、证据链整理、自评报告撰写、失分诊断与模拟打分。">年度消保监管评价自评全流程：指标解读、台账分工、证据链整理、自评报告撰写、失分诊断与模拟打分。</p>
           <div class="fs-cardMeta">
@@ -292,7 +291,7 @@ html,body{margin:0;padding:0;background:var(--dsw-alias-bg-base);color:var(--dsw
               <span class="fs-cardFact"><span class="fs-cardFactKey">核验日期</span><span class="fs-cardFactVal" title="2026-11-18">2026-11-18</span></span>
             </span>
           </div>
-          <p class="fs-cardInvoke"><span>调用名</span><code class="fs-cardInvokeCode">consumer-protection-an</code></p>
+          <p class="fs-cardInvoke"><span class="pv-tag pv-tag-success">已安装</span><span>调用名</span><code class="fs-cardInvokeCode">consumer-protection-an</code></p>
         </div>
         <div class="fs-cardActions">
           <button type="button" class="pv-btn pv-btn-ghost pv-btn-sm">详情</button>
@@ -304,7 +303,6 @@ html,body{margin:0;padding:0;background:var(--dsw-alias-bg-base);color:var(--dsw
           <div class="fs-cardHead">
             <button type="button" class="fs-cardName">合规销售</button>
             <span class="fs-cardNameEn">Compliance Sales</span>
-            
           </div>
           <p class="fs-cardSummary" title="营销宣传八不得审查、禁用词扫描、双录规范、适当性匹配（P1-P5/R1-R5）与渠道合作机构管理。">营销宣传八不得审查、禁用词扫描、双录规范、适当性匹配（P1-P5/R1-R5）与渠道合作机构管理。</p>
           <div class="fs-cardMeta">
@@ -331,7 +329,6 @@ html,body{margin:0;padding:0;background:var(--dsw-alias-bg-base);color:var(--dsw
           <div class="fs-cardHead">
             <button type="button" class="fs-cardName">投诉管理</button>
             <span class="fs-cardNameEn">Complaint Management</span>
-            
           </div>
           <p class="fs-cardSummary" title="投诉数据统计分析、分类打标（JR/T 0169-2018）、复杂投诉谈判支持、和解协议起草、溯源整改与月报生成。">投诉数据统计分析、分类打标（JR/T 0169-2018）、复杂投诉谈判支持、和解协议起草、溯源整改与月报生成。</p>
           <div class="fs-cardMeta">
@@ -358,7 +355,6 @@ html,body{margin:0;padding:0;background:var(--dsw-alias-bg-base);color:var(--dsw
           <div class="fs-cardHead">
             <button type="button" class="fs-cardName">消保检查</button>
             <span class="fs-cardNameEn">Consumer Protection Inspection</span>
-            
           </div>
           <p class="fs-cardSummary" title="检查制度与年度计划、六大领域检查执行、检查方案与记录表生成、整改跟踪台账与覆盖率统计。">检查制度与年度计划、六大领域检查执行、检查方案与记录表生成、整改跟踪台账与覆盖率统计。</p>
           <div class="fs-cardMeta">
@@ -385,7 +381,6 @@ html,body{margin:0;padding:0;background:var(--dsw-alias-bg-base);color:var(--dsw
           <div class="fs-cardHead">
             <button type="button" class="fs-cardName">PPT Master · 智能生成</button>
             <span class="fs-cardNameEn">PPT Master</span>
-            
           </div>
           <p class="fs-cardSummary" title="五阶段交互工作流生成可直接编辑的 .pptx：20 种图表类型、8 大温和色系，从大纲到成片一次交付。">五阶段交互工作流生成可直接编辑的 .pptx：20 种图表类型、8 大温和色系，从大纲到成片一次交付。</p>
           <div class="fs-cardMeta">
@@ -412,7 +407,6 @@ html,body{margin:0;padding:0;background:var(--dsw-alias-bg-base);color:var(--dsw
           <div class="fs-cardHead">
             <button type="button" class="fs-cardName">公文排版 Pro</button>
             <span class="fs-cardNameEn">Official Document Typesetting Pro</span>
-            
           </div>
           <p class="fs-cardSummary" title="按 GB/T 9704-2012 把 Markdown/TXT/DOCX 转成国标格式 Word：红头、发文字号、版记、字体字号与页边距一次到位。">按 GB/T 9704-2012 把 Markdown/TXT/DOCX 转成国标格式 Word：红头、发文字号、版记、字体字号与页边距一次到位。</p>
           <div class="fs-cardMeta">
@@ -439,7 +433,6 @@ html,body{margin:0;padding:0;background:var(--dsw-alias-bg-base);color:var(--dsw
           <div class="fs-cardHead">
             <button type="button" class="fs-cardName">PPT 原位编辑（win32com）</button>
             <span class="fs-cardNameEn">PPT In-place Editor (win32com)</span>
-            
           </div>
           <p class="fs-cardSummary" title="通过 PowerPoint COM 接口就地修改已有 .pptx，布局、图片、形状、渐变与特效全部保留；只改不重建。仅支持 Windows。">通过 PowerPoint COM 接口就地修改已有 .pptx，布局、图片、形状、渐变与特效全部保留；只改不重建。仅支持 Windows。</p>
           <div class="fs-cardMeta">
@@ -466,7 +459,6 @@ html,body{margin:0;padding:0;background:var(--dsw-alias-bg-base);color:var(--dsw
           <div class="fs-cardHead">
             <button type="button" class="fs-cardName">公文写作</button>
             <span class="fs-cardNameEn">Chinese Official Document Writing</span>
-            
           </div>
           <p class="fs-cardSummary" title="起草、改写、润色与校核中文公文与政务应用文：文种选择、格式规范、克制语体、事实密度与降 AI 味。">起草、改写、润色与校核中文公文与政务应用文：文种选择、格式规范、克制语体、事实密度与降 AI 味。</p>
           <div class="fs-cardMeta">
@@ -493,7 +485,6 @@ html,body{margin:0;padding:0;background:var(--dsw-alias-bg-base);color:var(--dsw
           <div class="fs-cardHead">
             <button type="button" class="fs-cardName">小说剧本分镜流水线</button>
             <span class="fs-cardNameEn">Novel → Script → Storyboard Pipeline</span>
-            
           </div>
           <p class="fs-cardSummary" title="从小说到剧本再到分镜的完整链路：素材挖点、三幕结构、场景剧本、分镜表、角色人设卡与 AI 绘图/视频提示词。">从小说到剧本再到分镜的完整链路：素材挖点、三幕结构、场景剧本、分镜表、角色人设卡与 AI 绘图/视频提示词。</p>
           <div class="fs-cardMeta">
@@ -520,7 +511,6 @@ html,body{margin:0;padding:0;background:var(--dsw-alias-bg-base);color:var(--dsw
           <div class="fs-cardHead">
             <button type="button" class="fs-cardName">全球智能投研</button>
             <span class="fs-cardNameEn">Global Stock Researcher</span>
-            
           </div>
           <p class="fs-cardSummary" title="A股/港股/美股/基金/ETF/期货/黄金/债券全资产量化分析与概率预测：多源自动降级、分位数与方向概率、可追溯证据链，支持导出 Word/PPT/PDF。">A股/港股/美股/基金/ETF/期货/黄金/债券全资产量化分析与概率预测：多源自动降级、分位数与方向概率、可追溯证据链，支持导出 Word/PPT/PDF。</p>
           <div class="fs-cardMeta">
@@ -547,7 +537,6 @@ html,body{margin:0;padding:0;background:var(--dsw-alias-bg-base);color:var(--dsw
           <div class="fs-cardHead">
             <button type="button" class="fs-cardName">智能数据可视化</button>
             <span class="fs-cardNameEn">Smart Data Visualization</span>
-            
           </div>
           <p class="fs-cardSummary" title="分析数据特征并推荐最佳图表组合，用 Plotly 生成交互式 HTML 仪表板，覆盖柱状/折线/散点/箱线/热力/旭日等十余种图型。">分析数据特征并推荐最佳图表组合，用 Plotly 生成交互式 HTML 仪表板，覆盖柱状/折线/散点/箱线/热力/旭日等十余种图型。</p>
           <div class="fs-cardMeta">

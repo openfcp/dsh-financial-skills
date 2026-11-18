@@ -96,7 +96,6 @@ function card(skill, categoryTitle, installed) {
           <div class="fs-cardHead">
             <button type="button" class="fs-cardName">${esc(skill.name.zh)}</button>
             <span class="fs-cardNameEn">${esc(skill.name.en)}</span>
-            ${installed ? '<span class="fs-cardBadge"><span class="pv-tag pv-tag-success">已安装</span></span>' : ''}
           </div>
           <p class="fs-cardSummary" title="${esc(summary)}">${esc(summary)}</p>
           <div class="fs-cardMeta">
@@ -107,7 +106,7 @@ ${chips.map((value) => `              <span class="pv-tag pv-tag-outline">${esc(
 ${facts.map(([key, value]) => `              <span class="fs-cardFact"><span class="fs-cardFactKey">${esc(key)}</span><span class="fs-cardFactVal" title="${esc(value)}">${esc(value)}</span></span>`).join('\n')}
             </span>
           </div>
-          ${installed && invoke !== '' ? `<p class="fs-cardInvoke"><span>调用名</span><code class="fs-cardInvokeCode">${esc(invoke)}</code></p>` : ''}
+          ${installed ? `<p class="fs-cardInvoke"><span class="pv-tag pv-tag-success">已安装</span><span>调用名</span><code class="fs-cardInvokeCode">${esc(invoke)}</code></p>` : ''}
         </div>
         <div class="fs-cardActions">
           <button type="button" class="pv-btn pv-btn-ghost pv-btn-sm">详情</button>
@@ -187,11 +186,11 @@ ${panelCss}
 
       <header class="fs-hero" data-dsh-part="hero">
         <span class="fs-heroMark">
-          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M12 3.4 20 9.2H4z" fill="currentColor" fill-opacity="0.12"></path>
-            <path d="M4.6 9.2h14.8"></path>
-            <path d="M7.6 11.4v6.2M12 11.4v6.2M16.4 11.4v6.2"></path>
-            <path d="M4.6 19.6h14.8"></path>
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true">
+            <g opacity="0.9"><rect x="1.3" y="1.3" width="9.5" height="9.5" rx="3"></rect><circle cx="10.8" cy="6.05" r="1.9"></circle></g>
+            <g opacity="0.62"><rect x="13.2" y="1.3" width="9.5" height="9.5" rx="3"></rect><circle cx="17.95" cy="10.8" r="1.9"></circle></g>
+            <g opacity="0.38"><rect x="1.3" y="13.2" width="9.5" height="9.5" rx="3"></rect><circle cx="6.05" cy="13.2" r="1.9"></circle></g>
+            <g opacity="0.7"><rect x="13.2" y="13.2" width="9.5" height="9.5" rx="3"></rect><circle cx="13.2" cy="17.95" r="1.9"></circle></g>
           </svg>
         </span>
         <div class="fs-heroMain">

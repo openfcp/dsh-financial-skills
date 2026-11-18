@@ -57,7 +57,7 @@
 | --- | --- | --- | --- | --- |
 | 1 | 侧栏入口图标 | 手绘 16×16 `svg`（银行柱廊：地面/檐口/山花/三柱），`stroke="currentColor"`、`fill="none"`、`aria-hidden` | 颜色继承宿主行 | `viewBox 0 0 16 16`；`width/height = size`（宿主给 16） |
 | 2 | banner 容器 | `<header>` | 边框 `--dsw-alias-border-l2`、底色 `--dsw-alias-bg-layer-1`、圆角 `--dsw-radius-xl` | `padding 22 24`、`gap 16` |
-| 3 | banner 标识 | 内联 22×22 `svg`（山花半透明填充 + 檐口 + 三柱 + 地面线），外包 44×44 盒 | 盒描边 `--dsw-alias-border-l3`、底色 `--dsw-alias-bg-layer-2`、描边色 `--dsw-alias-brand-primary`、圆角 `--dsw-radius-lg` | 44×44 盒、图标 22 |
+| 3 | banner 标识 | 内联 22×22 `svg`：**四块 `rx=3` 圆角方 + 每块一个半圆凸榫**（圆心落在方边上，只露一半），顺时针首尾相扣；每块是 `<g opacity>` 包 `rect` + `circle` | 盒描边 `--dsw-alias-border-l3`、底色 `--dsw-alias-bg-layer-2`、图标色 `--dsw-alias-label-secondary`；块面 `fill="currentColor"` + 4 档组透明度（0.9 / 0.62 / 0.38 / 0.7）→ **灰白色调**，亮/暗自动跟随 | 44×44 盒、图标 22、圆角 `--dsw-radius-lg`、凸榫 `r=1.9` |
 | 4 | banner 标题 | `<h1>` | `--dsw-alias-label-primary` | `19/26/600`、字距 `0.2px` |
 | 5 | banner slogan | `<p>`（固定文案） | `--dsw-alias-label-secondary` | `12.5/18` |
 | 6 | banner 统计胶囊 | `<span>`（非交互，只读数字） | 边框 `--dsw-alias-border-l2`、文字 `--dsw-alias-label-secondary` | `padding 4 10`、`11.5/16`、`tabular-nums`、`border-radius 999px` |
@@ -74,7 +74,7 @@
 | 17 | 卡片摘要 | `<p>`，`-webkit-line-clamp: 1`，`title` 给全文 | `--dsw-alias-label-tertiary` | `12/18`（单行，长条卡不再预留两行高度） |
 | 18 | 卡片元信息 · **胶囊** | 官方 `Tag` `tone="outline"` × 4：类别 / 来源 / 版本 / 协议（缺值写「未标注」，不隐藏） | 原语自带描边与底色 | `11.5/16`、`gap 6`、`flex-wrap` |
 | 18b | 卡片元信息 · **纯文本** | `<span>` 键值对 × 2：作者 / 核验日期 | 键 `--dsw-alias-label-caption`、值 `--dsw-alias-label-secondary` | `11.5/16`、gap `4px 12px` |
-| 19 | 卡片调用名 | `<p>` + `<code>`（仅已安装且已知调用名时） | `--dsw-alias-state-success-primary`、`--ds-font-family-code` | `11.5/16`、值省略号截断 |
+| 19 | 卡片调用名（已安装才出现） | `<p>`：**官方 `Tag`（已安装）打头** + 「调用名」 + `<code>`；缺调用名时用一句话兜底 | 标签 `--dsw-alias-state-success-primary`、代码 `--ds-font-family-code`、兜底文案 `--dsw-alias-label-tertiary` | `11.5/16`、gap 6、值省略号截断 |
 | 20 | 卡片动作 | 官方 `Button` `size="sm"`，装在 `.fs-cardActions`（定宽、不与信息抢位） | `variant="primary"`（安装）/ `variant="ghost"`（详情、卸载） | 原语自带；`gap 6`、窄屏（≤720px）时换行到卡片下方并右对齐 |
 | 21 | 加载态 | 官方 `TextShimmer` + 6 条卡片骨架；**banner / 元信息行（含刷新按钮）/ 工具条 / 分割线照常渲染** | 骨架底色 `--dsw-alias-bg-skeleton`、文案 `--dsw-alias-label-tertiary` | 骨架条 `height 78`、`radius xl`、`role="status"` |
 | 22 | 错误态 | 官方 `IconWarningTriangleOutlineRegular` + `Button variant="outline"` | `--dsw-alias-state-error-primary`（文案） | 图标 28、`13/20`、`padding 40 16` |
@@ -119,7 +119,7 @@
 | `--dsw-alias-label-caption` | 元信息键、分类计数、卡片元信息键、空态提示 |
 | `--dsw-alias-bg-layer-1` | banner / 卡片底色 |
 | `--dsw-alias-bg-layer-2` | banner 标识盒底色、卡片 hover 底色 |
-| `--dsw-alias-brand-primary` | banner 标识描边（唯一的品牌色落点，随主题走） |
+| `--dsw-alias-label-secondary` | banner 标识（灰白档，随主题在亮/暗之间自动换向）、slogan、统计胶囊 |
 | `--dsw-alias-border-l2` | 卡片边框、分割线、页脚/详情分隔线、卡片元信息上分隔线、统计胶囊描边 |
 | `--dsw-alias-border-l3` | banner 标识盒描边、元信息分隔点、卡片 hover 边框 |
 | `--dsw-alias-bg-skeleton` | 加载骨架占位 |
@@ -200,7 +200,7 @@
 
 | 反模式 | 本实现 |
 | --- | --- |
-| 位图 logo / 插画 / 渐变 / 大色块 | banner 标识是内联 22×22 线稿 SVG（`currentColor` + 半透明填充），随主题黑白或彩色；无位图、无渐变、无插画 |
+| 位图 logo / 插画 / 渐变 / 大色块 | banner 标识是内联 22×22 块面 SVG（`currentColor` + 4 档组透明度 = 灰白层次），随主题自动明暗；无位图、无渐变、无插画 |
 | 头像 / 首字字形盒 | 已移除：卡片用中文名 + 英文名区分，不再占 48px 放一个装饰盒 |
 | 硬编码颜色 / 手写暗色主题 | 颜色只用 `--dsw-*`（+ 2 个官方 `--ds-*` 核心变量）；无 `#hex`、`rgb()`、`hsl()`；无 `body[data-ds-dark-theme]` 覆盖（静态测试强制） |
 | 手搓 Button / Input / Modal / Menu / Tag / Switch | 全部使用官方原语；自写 CSS 仅限布局容器、banner、元信息行、卡片、弹窗正文外壳 |

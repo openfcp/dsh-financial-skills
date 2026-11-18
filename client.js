@@ -96,6 +96,7 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__ !== undefined && ty
           'card.openAria': '查看 {name} 详情',
           'card.noSummary': '暂无摘要',
           'card.invocationHint': '在技能列表里用这个名字调用',
+          'card.invocationUnknown': '调用名未记录，重装一次即可补全',
           'card.invocationDiffers': '调用名与技能 id 不同，在技能列表里按「{name}」查找',
           'search.label': '搜索插件',
           'search.placeholder': '搜索名称、摘要、标签或作者',
@@ -205,6 +206,7 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__ !== undefined && ty
           'card.openAria': 'View {name} details',
           'card.noSummary': 'No summary yet',
           'card.invocationHint': 'Call it by this name in the skill list',
+          'card.invocationUnknown': 'Invocation name not recorded — reinstall once to fill it in',
           'card.invocationDiffers': 'Invocation name differs from the skill id — look for "{name}" in the skill list',
           'search.label': 'Search skills',
           'search.placeholder': 'Search name, summary, tag or author',
@@ -600,7 +602,8 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__ !== undefined && ty
 
 /* 头部 banner：内联 SVG 标识 + 标题 + slogan，右侧一枚统计胶囊 */
 .fs-hero{position:relative;display:flex;align-items:center;gap:16px;min-width:0;padding:22px 24px;overflow:hidden;border:.5px solid var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-xl);background:var(--dsw-alias-bg-layer-1)}
-.fs-heroMark{position:relative;display:inline-flex;flex:none;align-items:center;justify-content:center;width:44px;height:44px;border:.5px solid var(--dsw-alias-border-l3);border-radius:var(--dsw-radius-lg);background:var(--dsw-alias-bg-layer-2);color:var(--dsw-alias-brand-primary)}
+/* 标识：灰白色调的四块带凸榫圆角方，颜色全部由 currentColor + 透明度推出，亮/暗主题自动跟随 */
+.fs-heroMark{position:relative;display:inline-flex;flex:none;align-items:center;justify-content:center;width:44px;height:44px;border:.5px solid var(--dsw-alias-border-l3);border-radius:var(--dsw-radius-lg);background:var(--dsw-alias-bg-layer-2);color:var(--dsw-alias-label-secondary)}
 .fs-heroMain{display:flex;flex-direction:column;gap:2px;min-width:0}
 .fs-heroTitle{margin:0;font-size:19px;font-weight:600;line-height:26px;letter-spacing:.2px}
 .fs-heroSlogan{margin:0;font-size:12.5px;line-height:18px;color:var(--dsw-alias-label-secondary)}
@@ -650,7 +653,6 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__ !== undefined && ty
 .fs-cardName{min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border:0;background:0 0;color:inherit;font:inherit;font-size:14.5px;font-weight:600;line-height:21px;text-align:left;cursor:pointer;padding:0}
 .fs-cardName:hover{text-decoration:underline;text-underline-offset:3px}
 .fs-cardNameEn{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary);font-size:11.5px;line-height:16px}
-.fs-cardBadge{flex:none;display:inline-flex;align-items:center;margin-left:2px}
 .fs-cardSummary{display:-webkit-box;overflow:hidden;-webkit-box-orient:vertical;-webkit-line-clamp:1;margin:0;color:var(--dsw-alias-label-tertiary);font-size:12px;line-height:18px}
 /* 类别 / 来源 / 版本 / 协议 → 胶囊；作者 / 核验日期 → 纯文本 */
 .fs-cardMeta{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin:0;min-width:0}
@@ -661,6 +663,7 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__ !== undefined && ty
 .fs-cardFactVal{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-secondary)}
 .fs-cardInvoke{display:flex;align-items:center;gap:6px;min-width:0;font-size:11.5px;line-height:16px;color:var(--dsw-alias-state-success-primary)}
 .fs-cardInvokeCode{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--ds-font-family-code,ui-monospace,monospace);font-size:11.5px}
+.fs-cardInvokeMuted{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary);font-size:11.5px;line-height:16px}
 .fs-cardActions{display:flex;flex:none;align-items:center;gap:6px}
 /* 窄容器：长条卡改为上下两段（信息在上、动作在下），不挤成一坨 */
 @media (max-width:720px){
@@ -841,10 +844,6 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__ !== undefined && ty
                 onClick: props.onOpen,
               }, displayName),
               secondary !== '' ? h('span', { className: 'fs-cardNameEn' }, secondary) : null,
-              installed
-                ? h('span', { className: 'fs-cardBadge' },
-                  h(P.Tag, { tone: 'success', 'data-dsh-part': 'installed-tag' }, tt('card.installed')))
-                : null,
             ),
             h('p', { className: 'fs-cardSummary', title: summary !== '' ? summary : undefined },
               summary !== '' ? summary : tt('card.noSummary'),
@@ -868,14 +867,22 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__ !== undefined && ty
                   h('span', { className: 'fs-cardFactVal', title: pair.value }, pair.value),
                 ))),
             ),
-            installed && invocation !== ''
+            // 已安装：「已安装」标签落在这行最前面，紧跟着才是调用名（标签贴在标题旁会把名称挤短）
+            installed
               ? h('p', {
                 className: 'fs-cardInvoke',
                 'data-dsh-part': 'card-invocation',
-                title: invocation !== skill.id ? tt('card.invocationDiffers', { name: invocation }) : tt('card.invocationHint'),
               },
-                h('span', null, tt('field.invocation')),
-                h('code', { className: 'fs-cardInvokeCode' }, invocation),
+                h(P.Tag, { tone: 'success', key: 'tag', 'data-dsh-part': 'installed-tag' }, tt('card.installed')),
+                invocation !== ''
+                  ? h('span', {
+                    key: 'label',
+                    title: invocation !== skill.id ? tt('card.invocationDiffers', { name: invocation }) : tt('card.invocationHint'),
+                  }, tt('field.invocation'))
+                  : null,
+                invocation !== ''
+                  ? h('code', { key: 'code', className: 'fs-cardInvokeCode' }, invocation)
+                  : h('span', { key: 'unknown', className: 'fs-cardInvokeMuted' }, tt('card.invocationUnknown')),
               )
               : null,
           ),
@@ -1240,22 +1247,33 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__ !== undefined && ty
          * 标识只用 currentColor 描边 / 半透明填充，颜色来自 token，因此明暗主题与黑白风格都成立；
          * 不加载任何第三方图片（图标只有内联 SVG，bundle 里不存在 img 元素）。
          */
+        /**
+         * 标识（灰白）：四块圆角方 + 各自的半圆凸榫，顺时针首尾相扣。
+         *
+         * 每块是「圆角方 + 一个圆心落在边上的圆」，圆只有一半露在外面 = 凸榫。
+         * 同一块内部两个图元放在同一个 `<g>` 里给整体 opacity——组内重叠不会二次加深，
+         * 组与组之间的 4 档透明度就是原图那套深浅层次。颜色只取 currentColor，不写死任何灰。
+         */
+        const heroMarkShape = (key, x, y, opacity, knobX, knobY) => h('g', { key, opacity },
+          h('rect', { key: 'r', x, y, width: 9.5, height: 9.5, rx: 3 }),
+          h('circle', { key: 'k', cx: knobX, cy: knobY, r: 1.9 }),
+        )
         const heroMark = h('span', { className: 'fs-heroMark', key: 'mark' },
           h('svg', {
             viewBox: '0 0 24 24',
             width: 22,
             height: 22,
-            fill: 'none',
-            stroke: 'currentColor',
-            strokeWidth: '1.4',
-            strokeLinecap: 'round',
-            strokeLinejoin: 'round',
+            fill: 'currentColor',
             'aria-hidden': 'true',
           },
-            h('path', { key: 'pediment', d: 'M12 3.4 20 9.2H4z', fill: 'currentColor', fillOpacity: '0.12' }),
-            h('path', { key: 'cornice', d: 'M4.6 9.2h14.8' }),
-            h('path', { key: 'columns', d: 'M7.6 11.4v6.2M12 11.4v6.2M16.4 11.4v6.2' }),
-            h('path', { key: 'ground', d: 'M4.6 19.6h14.8' }),
+            // 左上：凸榫朝右
+            heroMarkShape('tl', 1.3, 1.3, 0.9, 10.8, 6.05),
+            // 右上：凸榫朝下
+            heroMarkShape('tr', 13.2, 1.3, 0.62, 17.95, 10.8),
+            // 左下：凸榫朝上
+            heroMarkShape('bl', 1.3, 13.2, 0.38, 6.05, 13.2),
+            // 右下：凸榫朝左
+            heroMarkShape('br', 13.2, 13.2, 0.7, 13.2, 17.95),
           ),
         )
         const hero = h('header', { className: 'fs-hero', 'data-dsh-part': 'hero' },
