@@ -44,14 +44,14 @@ E2E_RESULT {"ok":true,"plugin":"dsh-financial-skills","home":"…/.e2e/home","pr
 
 - 本机安装 DeepSeek Harness（默认 CLI 路径 `/Applications/DeepSeek Harness.app/Contents/Resources/runtime/cli/bin/dsh`，可用 `DSH_CLI` 或 `--dsh` 覆盖）；
 - Node >= 20（需要全局 `fetch` / ESM）；
-- **不需要**模型、凭据或网络：目录走 `offline: true`（随包 `format: 3` 快照，仍是 9 类 17 条、含来源坐标），安装/详情走 `DSH_FINANCIAL_SKILLS_FIXTURE` 指向的本地 fixture（`plugins/<id>/` 兼容布局）。一次运行不花模型 token。
+- **不需要**模型、凭据或网络：目录走 `offline: true`（随包 `format: 3` 快照，条数以快照为准、含来源坐标），安装/详情走 `DSH_FINANCIAL_SKILLS_FIXTURE` 指向的本地 fixture（`plugins/<id>/` 兼容布局）。一次运行不花模型 token。
 
 ---
 
 ## 一次运行做了什么
 
 1. **隔离 home 与 profile** —— 拒绝 `~/.dsh` 及其子目录；在 `--home`（默认 `<repo>/.e2e/home`）下用官方 `web` 模板克隆 `profiles/<profile>`（已存在则复用）。
-2. **生成 fixture** —— 在 `--fixture`（默认 `<home>/../fixture`）写一份极小的上游仓库替身：`plugins/<id>/SKILL.md`、`package.json`、`README.md`，以及从 `catalog.snapshot.json` 复制的 `catalog.json`。fixture 故意用 `format: 2` 时代的 `plugins/<id>/` 目录布局：Host 仍按兼容路径读取，所以这条用例同时守卫旧布局不回退。fixture 技能选 `official-source-qa`——它在 format-3 清单里是 `source.type = github`、`vendored: true`、`path = skills/official-source-qa` 的条目，安装会经过「id 必须在目录里」的校验。
+2. **生成 fixture** —— 在 `--fixture`（默认 `<home>/../fixture`）写一份极小的上游仓库替身：`plugins/<id>/SKILL.md`、`package.json`、`README.md`，以及从 `catalog.snapshot.json` 复制的 `catalog.json`。fixture 故意用 `format: 2` 时代的 `plugins/<id>/` 目录布局：Host 仍按兼容路径读取，所以这条用例同时守卫旧布局不回退。fixture 技能默认选 `dyz-gongwen-skills`——它在 format-3 清单里是 `source.type = github`、`path = skills/gongwen` 的条目，安装会经过「id 必须在目录里」的校验。
 3. **把插件装进 profile** —— 复制包目录到 `profiles/<profile>/node_modules/dsh-financial-skills`，记录 `"dsh-financial-skills": "file:<repo>"` 依赖，并把 `dsh-financial-skills` 追加到 `dsh.profile.bundles`。bundle 被选中后，包自带的 `cordis.patch.yml` 才会插入 `financial-skills` 行。
 4. **写 `--patch` 覆盖层** —— 只写一条 `- id: financial-skills` 的 **config 覆盖**（不是第二次 insert），默认 `{"offline": true}`；这样组合结果里始终只有一行 `financial-skills`。用 `--plugin-config` 可换配置（`--plugin-config '{}'` 走真实网络默认值）。
 5. **预检** —— `dsh <profile> --patch <overlay> --dump-config`，断言组合树里有且仅有一行 `- id: financial-skills`，且覆盖配置确实生效。YAML/组合错误在这里就失败，不浪费一次十几秒的启动。
@@ -71,11 +71,11 @@ E2E_RESULT {"ok":true,"plugin":"dsh-financial-skills","home":"…/.e2e/home","pr
 | --- | --- |
 | `pluginMounted` | profile 组合真的插入了 `financial-skills` 行，插件实例 `fiberPhase: active`。 |
 | `healthOk` / `healthSkillRootInsideHome` | `GET /health` 返回 `{version, upstream, cacheAt, offline, skillRoot, dshHome}`，且 `skillRoot` 在隔离 home 内。 |
-| `catalogRoute` / `catalogCategories` / `catalogSkills` | `GET /catalog` 返回 `{ok:true,value:{catalog,meta}}`，`catalog.categories.length === 9`、`catalog.skills.length === 17`。 |
+| `catalogRoute` / `catalogCategories` / `catalogSkills` | `GET /catalog` 返回 `{ok:true,value:{catalog,meta}}`，`catalog.categories.length === 9`、`catalog.skills.length` 与随包快照一致。 |
 | `catalogCategoryCountPresent` / `catalogCategoryCounts` | 每个分类都有数字 `count`，且所有 `count` 之和等于技能总数（9 类含 5 个 0 条分类）。 |
 | `catalogResolveTemplates` | 归一化目录带 format-3 顶层 `resolve`：`skillhub.kind === 'zip'` 且 URL 含 `{slug}` 模板；`github.kind === 'files'` 且 raw/api 模板都是字符串。 |
 | `catalogSourceCoordinates` | 至少各有一条 `source.type = github`（带 `repo`/`path`/`ref`）与 `source.type = skillhub`（带 `slug` 与 `skillhubCommand`）的条目——清单确实只存引用，且坐标被归一化保留。 |
-| `catalogVendoredEntry` | `official-source-qa` 是唯一 vendored 的 GitHub 条目：`source.vendored === true`、`source.path === 'skills/official-source-qa'`。 |
+| `catalogRootAndExcludeSources` | 仓库根来源（`source.path === ''`）与 `source.exclude` 条目在归一化后数量与随包快照一致，没有被改写成 `plugins/<id>` 或丢弃。 |
 | `catalogUpstreamSite` / `catalogMetaHonest` / `catalogOfflineLabel` | `upstreamSite` 是上游站点；`meta.source ∈ {network,cache,snapshot}`、`offline`/`stale` 为布尔；离线模式下 `meta.offline === true`（不把快照谎称为实时）。 |
 | `catalogCategoryCounts` | 每个分类的 `count` 之和等于技能总数（9 类含 5 个 0 条分类）。 |
 | `installedRoute` / `installedRoot` | `GET /installed` 返回 `{root,count,skills}`，root 在隔离 home 内。 |
@@ -109,7 +109,7 @@ Host 半区支持用环境变量把上游 GitHub 仓库替换成本地目录：
 | `DSH_FINANCIAL_SKILLS_OFFLINE=1` | 等价于配置 `offline: true`（只读缓存/快照）。 |
 | `DSH_FINANCIAL_SKILLS_HOME` / `DSH_FINANCIAL_SKILLS_INSTALL_ROOT` | 覆盖 `dshHome` / `installRoot`（优先级：config > 环境变量 > `DSH_HOME` > `~/.dsh`）。 |
 
-harness 用真实目录 id `official-source-qa`（上游目录里本来就存在、`source.type = github`、`vendored: true` 的条目）做 fixture，所以安装会先经过「id 必须在目录里」的校验。fixture 内容由 harness 每次生成，**不是**上游技能正文。format-3 清单下 Host 会优先用 `source.path` 定位（`skills/official-source-qa`），找不到时回落到兼容的 `plugins/<id>/`；这条回落正是 E2E 要证明的。
+harness 用真实目录 id `dyz-gongwen-skills`（上游目录里本来就存在、`source.type = github` 的条目）做 fixture，所以安装会先经过「id 必须在目录里」的校验。fixture 内容由 harness 每次生成，**不是**上游技能正文。format-3 清单下 Host 会优先用 `source.path` 定位（`skills/gongwen`），找不到时回落到兼容的 `plugins/<id>/`；这条回落正是 E2E 要证明的。
 
 ## 故障排查
 

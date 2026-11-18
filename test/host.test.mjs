@@ -26,9 +26,9 @@ import {
   normalizeCatalog,
   SNAPSHOT_FILE,
 } from '../lib/catalog.js'
-import { buildGithubRawUrls, buildRawUrls, createSource, isSafeRelativePath, SOURCE_REPO_LABEL, SourceError } from '../lib/github.js'
+import { buildGithubApiUrl, buildGithubRawUrls, buildRawUrls, createSource, isSafeRelativePath, SOURCE_REPO_LABEL, SourceError } from '../lib/github.js'
 import { SkillhubError, createSkillhub, extractZip } from '../lib/skillhub.js'
-import { isLoopback, readJson, sendJson, truncateToBytes } from '../lib/http.js'
+import { hostnameOf, isLoopback, isLoopbackHost, readJson, sendJson, truncateToBytes } from '../lib/http.js'
 import { DETAIL_MARKDOWN_LIMIT, ROUTE_PATHS, ROUTES, createRoutes } from '../lib/routes.js'
 import {
   DEFAULT_LIMITS,
@@ -154,7 +154,7 @@ function patchZip64Eocd(zip) {
   throw new Error('EOCD not found')
 }
 
-/** 读随包快照（真实上游数据，9 类 17 条）。 */
+/** 读随包快照（真实上游数据，条数随上游刷新变化）。 */
 let snapshotRawCache
 async function snapshotRaw() {
   if (snapshotRawCache === undefined) snapshotRawCache = JSON.parse(await readFile(SNAPSHOT_FILE, 'utf8'))
@@ -197,11 +197,16 @@ function bufferResponse(buffer) {
 /** 造一个可迭代的假请求。 */
 function requestWithBody(options = {}) {
   const body = options.body
+  const method = options.method ?? 'GET'
   const chunks = body === undefined ? [] : [Buffer.from(typeof body === 'string' ? body : JSON.stringify(body), 'utf8')]
+  const headers = { host: options.host ?? '127.0.0.1:5173', ...(options.headers ?? {}) }
+  if (method === 'POST' && options.body !== undefined && headers['content-type'] === undefined) {
+    headers['content-type'] = 'application/json'
+  }
   return {
-    method: options.method ?? 'GET',
+    method,
     url: options.url ?? '/',
-    headers: {},
+    headers,
     socket: { remoteAddress: options.remoteAddress ?? '127.0.0.1' },
     async *[Symbol.asyncIterator]() {
       for (const chunk of chunks) yield chunk
@@ -251,6 +256,22 @@ test('http: isLoopback 接受 127/8、::1 与 IPv4 映射，拒绝其他来源',
   assert.equal(isLoopback({}), false)
 })
 
+test('http: isLoopbackHost 只接受 loopback 名字，hostnameOf 正确去端口', () => {
+  assert.equal(hostnameOf('127.0.0.1:5173'), '127.0.0.1')
+  assert.equal(hostnameOf('LOCALHOST:5173'), 'localhost')
+  assert.equal(hostnameOf('[::1]:5173'), '[::1]')
+  assert.equal(hostnameOf('evil.com:443'), 'evil.com')
+  assert.equal(hostnameOf('127.0.0.1:not-a-port'), '')
+  assert.equal(hostnameOf(''), '')
+
+  for (const host of ['127.0.0.1', '127.0.0.1:5173', '127.5.6.7:80', 'localhost', 'localhost:3000', '[::1]', '[::1]:5173']) {
+    assert.equal(isLoopbackHost(host), true, host)
+  }
+  for (const host of ['evil.com', 'evil.com:5173', '127.0.0.1.evil.com', 'localhost.evil.com', '10.0.0.1:80', '[::1]evil.com', '[::1]:x', '', undefined]) {
+    assert.equal(isLoopbackHost(host), false, String(host))
+  }
+})
+
 test('http: sendJson 写 JSON 信封头，truncateToBytes 不切坏多字节字符', () => {
   const res = responseRecorder()
   sendJson(res, 200, { ok: true, value: { text: '你好' } })
@@ -277,7 +298,7 @@ test('http: readJson 解析对象、空体按 {} 处理、超限抛错', async (
 // 归一化
 // ---------------------------------------------------------------------------
 
-test('catalog: normalizeCatalog 输出 9 类 17 条、format 3 来源坐标与 resolve', async () => {
+test('catalog: normalizeCatalog 归一化快照并保留 format 3 来源坐标', async () => {
   const raw = await snapshotRaw()
   const installed = new Map([
     ['compliance-sales', { version: '9.9.9', installedAt: 1700000000000, path: '/tmp/skills/compliance-sales' }],
@@ -285,10 +306,10 @@ test('catalog: normalizeCatalog 输出 9 类 17 条、format 3 来源坐标与 r
   const catalog = normalizeCatalog(raw, installed)
 
   assert.equal(catalog.id, 'awesome-financial-skills')
-  assert.equal(catalog.updated, '2026-11-13')
+  assert.equal(catalog.updated, raw.updated)
   assert.equal(catalog.upstreamSite, 'https://openfcp.github.io/awesome-financial-skills/')
   assert.equal(catalog.categories.length, 9)
-  assert.equal(catalog.skills.length, 17)
+  assert.equal(catalog.skills.length, raw.skills.length)
 
   // format 3：顶层 resolve 归一化（快照里带完整模板）
   assert.equal(catalog.resolve.skillhub.kind, 'zip')
@@ -297,24 +318,13 @@ test('catalog: normalizeCatalog 输出 9 类 17 条、format 3 来源坐标与 r
   assert.match(catalog.resolve.github.raw, /^https:\/\/raw\.githubusercontent\.com\/\{repo\}\/\{ref\}\/\{path\}\/\{file\}$/)
   assert.match(catalog.resolve.github.api, /^https:\/\/api\.github\.com\/repos\/\{repo\}\/contents\/\{path\}\?ref=\{ref\}$/)
 
-  assert.deepEqual(
-    Object.fromEntries(catalog.categories.map((category) => [category.id, category.count])),
-    {
-      'consumer-protection': 6,
-      'office-design': 5,
-      'data-tech': 5,
-      'research-analysis': 0,
-      'compliance-legal': 1,
-      'risk-management': 0,
-      'invest-trading': 0,
-      'product-business': 0,
-      other: 0,
-    },
-  )
+  // 结构性断言：分类齐全、计数与技能总数一致、每条都能归一化（不写死上游条数）
+  assert.equal(catalog.categories.every((category) => Number.isInteger(category.count) && category.count >= 0), true)
   assert.equal(
     catalog.categories.reduce((sum, category) => sum + category.count, 0),
-    17,
+    catalog.skills.length,
   )
+  assert.equal(catalog.skills.every((skill) => isValidId(skill.id) && typeof skill.name.zh === 'string' && skill.name.zh !== ''), true)
 
   const sales = catalog.skills.find((skill) => skill.id === 'compliance-sales')
   assert.equal(sales.installed, true)
@@ -329,17 +339,20 @@ test('catalog: normalizeCatalog 输出 9 类 17 条、format 3 来源坐标与 r
     skillhubCommand: 'skillhub install compliance-sales --namespace user_e3180ba3',
   })
 
-  const qa = catalog.skills.find((skill) => skill.id === 'official-source-qa')
-  assert.deepEqual(qa.source, {
-    type: 'github',
-    repo: 'openfcp/awesome-financial-skills',
-    path: 'skills/official-source-qa',
-    ref: 'main',
-    vendored: true,
-  })
-  assert.equal(qa.pluginPath, './skills/official-source-qa')
-  assert.equal(qa.installed, false)
-  assert.equal(qa.installedVersion, undefined)
+  // 仓库根来源（source.path: ""）必须原样保留，不能再被改写成 plugins/<id>
+  const rootEntry = raw.skills.find((skill) => skill.source?.type === 'github' && skill.source.path === '')
+  assert.ok(rootEntry !== undefined, '快照里应至少有一条仓库根来源')
+  const rootSkill = catalog.skills.find((skill) => skill.id === rootEntry.id)
+  assert.equal(rootSkill.source.path, '')
+  assert.equal(rootSkill.pluginPath, undefined) // 仓库根没有子目录前缀
+
+  // source.exclude 必须透传
+  const excludeEntry = raw.skills.find(
+    (skill) => skill.source?.type === 'github' && Array.isArray(skill.source.exclude) && skill.source.exclude.length > 0,
+  )
+  assert.ok(excludeEntry !== undefined, '快照里应至少有一条带 exclude 的技能')
+  const excludeSkill = catalog.skills.find((skill) => skill.id === excludeEntry.id)
+  assert.deepEqual(excludeSkill.source.exclude, excludeEntry.source.exclude)
 
   const review = catalog.skills.find((skill) => skill.id === 'consumer-protection-review')
   assert.equal(review.name.zh, '消保审查')
@@ -493,12 +506,12 @@ test('catalog: 镜像链按契约顺序降级，成功后写磁盘缓存', async
   assert.equal(result.meta.offline, false)
   assert.deepEqual(calls, DEFAULT_INDEX_URLS.slice(0, 3))
   assert.equal(result.catalog.categories.length, 9)
-  assert.equal(result.catalog.skills.length, 17)
+  assert.equal(result.catalog.skills.length, raw.skills.length)
 
   assert.equal(existsSync(cacheFile), true)
   const cached = JSON.parse(await readFile(cacheFile, 'utf8'))
   assert.equal(cached.fetchedAt, result.meta.fetchedAt)
-  assert.equal(cached.data.skills.length, 17)
+  assert.equal(cached.data.skills.length, raw.skills.length)
 
   const peeked = await catalog.peekCache()
   assert.equal(peeked.fetchedAt, result.meta.fetchedAt)
@@ -569,6 +582,7 @@ test('catalog: 新鲜缓存直接命中；过期缓存先联网、失败后回�
 test('catalog: 镜像全挂且无缓存时回退随包快照；损坏缓存视为不存在', async (t) => {
   const dir = await tempDir(t)
   const cacheFile = join(dir, 'catalog.cache.json')
+  const raw = await snapshotRaw()
   await writeFile(cacheFile, 'not-json')
 
   const catalog = createCatalog({
@@ -585,12 +599,12 @@ test('catalog: 镜像全挂且无缓存时回退随包快照；损坏缓存视�
   assert.equal(result.meta.stale, true)
   assert.match(result.meta.error, /network down/)
   assert.equal(result.catalog.categories.length, 9)
-  assert.equal(result.catalog.skills.length, 17)
+  assert.equal(result.catalog.skills.length, raw.skills.length)
 
   // loadLocal 只读本地：有快照就不联网
   const local = await catalog.loadLocal()
   assert.equal(local.meta.source, 'snapshot')
-  assert.equal(local.catalog.skills.length, 17)
+  assert.equal(local.catalog.skills.length, raw.skills.length)
 })
 
 // ---------------------------------------------------------------------------
@@ -604,6 +618,52 @@ test('github: buildRawUrls 顺序为 raw → fastly → gcore → cdn', () => {
   assert.match(urls[1], /^https:\/\/fastly\.jsdelivr\.net\/gh\/openfcp\/awesome-financial-skills@main\//)
   assert.match(urls[2], /^https:\/\/gcore\.jsdelivr\.net\/gh\//)
   assert.match(urls[3], /^https:\/\/cdn\.jsdelivr\.net\/gh\//)
+})
+
+test('github: fixture 保留中文目录 / 文件名，不静默丢弃', async (t) => {
+  const repo = await tempDir(t)
+  await writeFileDeep(repo, 'skills/lieflat-gongwen/SKILL.md', '---\nname: lieflat-gongwen\n---\n正文')
+  await writeFileDeep(repo, 'skills/lieflat-gongwen/参考/公文常用句式.md', '句式')
+  await writeFileDeep(repo, 'skills/lieflat-gongwen/党建语料/二十大报告 摘编.txt', '语料')
+  await writeFileDeep(repo, 'skills/lieflat-gongwen/示例（一）/demo.md', '示例')
+
+  const source = createSource({ fixtureDir: repo, fetchImpl: mustNotFetch })
+  const files = await source.listFiles({ repo: 'o/r', path: 'skills/lieflat-gongwen', ref: 'main' }, undefined, { id: 'lieflat-gongwen' })
+  assert.deepEqual(
+    files.map((file) => file.path),
+    ['SKILL.md', '党建语料/二十大报告 摘编.txt', '参考/公文常用句式.md', '示例（一）/demo.md'],
+  )
+  assert.equal(
+    (await source.readFile({ repo: 'o/r', path: 'skills/lieflat-gongwen', ref: 'main' }, undefined, '参考/公文常用句式.md', { id: 'lieflat-gongwen' })).toString('utf8'),
+    '句式',
+  )
+})
+
+test('github: 不安全路径被丢弃时调用 logger 告警', async (t) => {
+  const repo = await tempDir(t)
+  await writeFileDeep(repo, 'skills/demo/SKILL.md', '# demo')
+  await writeFileDeep(repo, 'skills/demo/a:b.md', '非法文件名')
+  const warnings = []
+  const source = createSource({
+    fixtureDir: repo,
+    fetchImpl: mustNotFetch,
+    logger: { warn: (message) => warnings.push(String(message)) },
+  })
+  const files = await source.listFiles({ repo: 'o/r', path: 'skills/demo', ref: 'main' }, undefined, { id: 'demo' })
+  assert.deepEqual(files.map((file) => file.path), ['SKILL.md'])
+  assert.equal(warnings.some((message) => message.includes('a:b.md')), true, warnings.join('\n'))
+})
+
+test('github: 中文路径在 raw / api URL 里逐段编码', () => {
+  const resolveGithub = {
+    raw: 'https://raw.githubusercontent.com/{repo}/{ref}/{path}/{file}',
+    api: 'https://api.github.com/repos/{repo}/contents/{path}?ref={ref}',
+  }
+  const coords = { repo: 'o/r', path: '技能/公文', ref: 'main' }
+  const urls = buildGithubRawUrls(resolveGithub, coords, '参考/句式.md')
+  assert.match(urls[0], /^https:\/\/raw\.githubusercontent\.com\/o\/r\/main\/%E6%8A%80%E8%83%BD\/%E5%85%AC%E6%96%87\/%E5%8F%82%E8%80%83\/%E5%8F%A5%E5%BC%8F\.md$/)
+  const api = buildGithubApiUrl(resolveGithub, coords)
+  assert.equal(api, 'https://api.github.com/repos/o/r/contents/%E6%8A%80%E8%83%BD/%E5%85%AC%E6%96%87?ref=main')
 })
 
 test('github: readPluginFile 第一条镜像失败后换下一条，全部失败报 network', async () => {
@@ -648,6 +708,15 @@ test('github: readPluginFile 先拒绝不安全相对路径，绝不发请求', 
   assert.equal(isSafeRelativePath('references/a-b_c.md'), true)
   assert.equal(isSafeRelativePath('../x'), false)
   assert.equal(isSafeRelativePath('/abs'), false)
+  // 非 ASCII（中文 / 空格 / 括号）是合法的上游布局，必须放行
+  assert.equal(isSafeRelativePath('参考/指南.md'), true)
+  assert.equal(isSafeRelativePath('党建语料/二十大报告 摘编.txt'), true)
+  assert.equal(isSafeRelativePath('示例（一）/demo.md'), true)
+  assert.equal(isSafeRelativePath('emoji/🎯.md'), true)
+  // 仍然挡住路径逃逸与 Windows 非法字符
+  for (const unsafe of ['a//b.md', 'a/./b.md', 'a/../b.md', 'C:/x.md', 'a\\b.md', 'a:b.md', 'a*b.md', 'a?b.md', 'a"b.md', 'a<b.md', 'a>b.md', 'a|b.md', 'trail./x.md', 'trail /x.md', 'a\u0000b.md', 'a\u001fb.md']) {
+    assert.equal(isSafeRelativePath(unsafe), false, JSON.stringify(unsafe))
+  }
 })
 
 test('github: 目录清单走 contents API 并缓存 30 分钟', async () => {
@@ -844,6 +913,21 @@ test('skillhub: extractZip 支持 store/deflate、目录条目、嵌套文件与
   // SKILL.md 直接在 zip 根时不做剥离
   const rooted = extractZip(buildZip([{ name: 'SKILL.md', data: '# 根' }, { name: 'a.md', data: 'a' }]))
   assert.deepEqual(rooted.files.map((file) => file.path), ['SKILL.md', 'a.md'])
+})
+
+test('skillhub: extractZip 接受中文 / 非 ASCII 条目，但仍拒绝逃逸路径', () => {
+  const zip = buildZip([
+    { name: '技能/SKILL.md', data: '# 中文包' },
+    { name: '技能/参考/句式.md', data: '句式' },
+    { name: '技能/示例（一）/demo.md', data: '示例' },
+    { name: '技能/党建语料/报告 摘编.txt', data: '语料' },
+  ])
+  const extracted = extractZip(zip)
+  assert.deepEqual(
+    extracted.files.map((file) => file.path),
+    ['SKILL.md', '党建语料/报告 摘编.txt', '参考/句式.md', '示例（一）/demo.md'],
+  )
+  assert.equal(extracted.files[2].buffer.toString('utf8'), '句式')
 })
 
 test('skillhub: extractZip 拒绝加密 / zip64 / 逃逸路径 / 缺 SKILL.md / 未知压缩方法', () => {
@@ -1332,15 +1416,15 @@ test('store: uninstall 处理平铺 <id>.md 形态', async (t) => {
 // ---------------------------------------------------------------------------
 
 const SKILL_BODY = '# 官方口径问答\n\n把事实性问题变成可发送的答复。'
-const SKILL_MARKDOWN = `---\nname: official-source-qa\ndescription: 官方口径问答\n---\n${SKILL_BODY}`
-const SKILL_PACKAGE = '{"name":"official-source-qa"}'
+const SKILL_MARKDOWN = `---\nname: dyz-gongwen-skills\ndescription: 官方口径问答\n---\n${SKILL_BODY}`
+const SKILL_PACKAGE = '{"name":"dyz-gongwen-skills"}'
 
 /** 造一套路由依赖（offline + 快照目录 + fixture 安装源，全程零网络）。 */
 async function createHarness(t, options = {}) {
   const repo = await makeFixtureRepo(
     t,
     options.skills ?? {
-      'official-source-qa': {
+      'dyz-gongwen-skills': {
         'SKILL.md': SKILL_MARKDOWN,
         'package.json': SKILL_PACKAGE,
       },
@@ -1403,16 +1487,77 @@ test('routes: 六条路由都对非 loopback 返回 403 信封', async (t) => {
   assert.equal(allowed.status, 200)
 })
 
-test('routes: catalog 用快照返回 9 类 17 条，信封与 meta 正确', async (t) => {
+test('routes: 非 loopback Host（DNS rebinding）返回 403', async (t) => {
   const harness = await createHarness(t)
+  for (const path of ROUTE_PATHS) {
+    const method = path === ROUTES.install || path === ROUTES.uninstall ? 'POST' : 'GET'
+    const result = await callRoute(harness.routes, path, { method, host: 'evil.example:5173' })
+    assert.equal(result.status, 403, path)
+    assert.deepEqual(result.body, { ok: false, error: 'unexpected host' })
+  }
+  // 缺少 Host 头同样拒绝（HTTP/1.1 正常请求一定有 Host）
+  const missing = await callRoute(harness.routes, ROUTES.health, { method: 'GET', host: '' })
+  assert.equal(missing.status, 403)
+  assert.deepEqual(missing.body, { ok: false, error: 'unexpected host' })
+})
+
+test('routes: POST 要求 application/json，跨站 Origin 返回 403', async (t) => {
+  const harness = await createHarness(t)
+
+  const textPlain = await callRoute(harness.routes, ROUTES.install, {
+    method: 'POST',
+    body: { id: 'dyz-gongwen-skills' },
+    headers: { 'content-type': 'text/plain' },
+  })
+  assert.equal(textPlain.status, 415)
+  assert.deepEqual(textPlain.body, { ok: false, error: 'expected application/json' })
+
+  // application/jsonp 不能靠前缀蒙混过关
+  const jsonp = await callRoute(harness.routes, ROUTES.install, {
+    method: 'POST',
+    body: { id: 'dyz-gongwen-skills' },
+    headers: { 'content-type': 'application/jsonp' },
+  })
+  assert.equal(jsonp.status, 415)
+
+  const crossOrigin = await callRoute(harness.routes, ROUTES.install, {
+    method: 'POST',
+    body: { id: 'dyz-gongwen-skills' },
+    headers: { origin: 'http://evil.example:5173' },
+  })
+  assert.equal(crossOrigin.status, 403)
+  assert.deepEqual(crossOrigin.body, { ok: false, error: 'cross-origin request' })
+
+  const nullOrigin = await callRoute(harness.routes, ROUTES.uninstall, {
+    method: 'POST',
+    body: { id: 'dyz-gongwen-skills' },
+    headers: { origin: 'null' },
+  })
+  assert.equal(nullOrigin.status, 403)
+  assert.deepEqual(nullOrigin.body, { ok: false, error: 'cross-origin request' })
+
+  const sameOrigin = await callRoute(harness.routes, ROUTES.install, {
+    method: 'POST',
+    body: { id: 'dyz-gongwen-skills' },
+    headers: { origin: 'http://127.0.0.1:5173' },
+  })
+  assert.equal(sameOrigin.status, 200, JSON.stringify(sameOrigin.body))
+})
+
+test('routes: catalog 用快照返回完整分类与技能，信封与 meta 正确', async (t) => {
+  const harness = await createHarness(t)
+  const raw = await snapshotRaw()
   const result = await callRoute(harness.routes, ROUTES.catalog, { method: 'GET' })
   assert.equal(result.status, 200)
   assert.equal(result.headers['content-type'], 'application/json; charset=utf-8')
   assert.equal(result.headers['cache-control'], 'no-store')
   assert.equal(result.body.ok, true)
   assert.equal(result.body.value.catalog.categories.length, 9)
-  assert.equal(result.body.value.catalog.skills.length, 17)
-  assert.equal(result.body.value.catalog.categories.reduce((sum, category) => sum + category.count, 0), 17)
+  assert.equal(result.body.value.catalog.skills.length, raw.skills.length)
+  assert.equal(
+    result.body.value.catalog.categories.reduce((sum, category) => sum + category.count, 0),
+    raw.skills.length,
+  )
   assert.equal(result.body.value.meta.source, 'snapshot')
   assert.equal(result.body.value.meta.offline, true)
   assert.equal(result.body.value.meta.stale, true)
@@ -1432,7 +1577,7 @@ test('routes: 非法 / 缺失 id 返回 400，未知 id 返回 404', async (t) =
   const cases = [
     [ROUTES.detail, { method: 'GET', url: `${ROUTES.detail}?id=..%2Fescape` }],
     [ROUTES.detail, { method: 'GET' }],
-    [ROUTES.install, { method: 'POST' }],
+    [ROUTES.install, { method: 'POST', body: {} }],
     [ROUTES.install, { method: 'POST', body: { id: 'Bad_Id' } }],
     [ROUTES.uninstall, { method: 'POST', body: {} }],
   ]
@@ -1458,11 +1603,11 @@ test('routes: detail 返回正文、文件清单、总量、license/version/sour
   const harness = await createHarness(t)
   const result = await callRoute(harness.routes, ROUTES.detail, {
     method: 'GET',
-    url: `${ROUTES.detail}?id=official-source-qa`,
+    url: `${ROUTES.detail}?id=dyz-gongwen-skills`,
   })
   assert.equal(result.status, 200)
   const value = result.body.value
-  assert.equal(value.id, 'official-source-qa')
+  assert.equal(value.id, 'dyz-gongwen-skills')
   assert.equal(value.markdown, SKILL_BODY)
   assert.deepEqual(
     value.files.map((file) => file.path),
@@ -1470,25 +1615,25 @@ test('routes: detail 返回正文、文件清单、总量、license/version/sour
   )
   assert.ok(value.files.every((file) => Number.isFinite(file.size)))
   assert.equal(value.totalBytes, Buffer.byteLength(SKILL_MARKDOWN) + Buffer.byteLength(SKILL_PACKAGE))
-  assert.equal(value.license, 'proprietary')
-  assert.equal(value.version, '1.0.0')
+  assert.equal(value.license, 'PolyForm-Noncommercial-1.0.0')
+  assert.equal(value.version, '1.1.0')
   assert.deepEqual(value.source, {
     type: 'github',
-    repo: 'openfcp/awesome-financial-skills',
-    path: 'skills/official-source-qa',
+    repo: 'duyunzhoudyz/dyz-gongwen-skills',
+    path: 'skills/gongwen',
     ref: 'main',
-    vendored: true,
+    vendored: false,
   })
 })
 
 test('routes: detail 正文按 64 KiB 截断', async (t) => {
   const big = `${'x'.repeat(DETAIL_MARKDOWN_LIMIT)}尾部`
   const harness = await createHarness(t, {
-    skills: { 'official-source-qa': { 'SKILL.md': big, 'package.json': '{}' } },
+    skills: { 'dyz-gongwen-skills': { 'SKILL.md': big, 'package.json': '{}' } },
   })
   const result = await callRoute(harness.routes, ROUTES.detail, {
     method: 'GET',
-    url: `${ROUTES.detail}?id=official-source-qa`,
+    url: `${ROUTES.detail}?id=dyz-gongwen-skills`,
   })
   assert.equal(result.status, 200)
   const markdown = result.body.value.markdown
@@ -1560,39 +1705,39 @@ test('routes: install → installed → 二次 install 409 → uninstall 归档 
   assert.equal(before.status, 200)
   assert.deepEqual(before.body.value, { root: harness.installRoot, count: 0, skills: [] })
 
-  const installed = await callRoute(harness.routes, ROUTES.install, { method: 'POST', body: { id: 'official-source-qa' } })
+  const installed = await callRoute(harness.routes, ROUTES.install, { method: 'POST', body: { id: 'dyz-gongwen-skills' } })
   assert.equal(installed.status, 200)
   assert.equal(installed.body.ok, true)
-  assert.equal(installed.body.value.id, 'official-source-qa')
+  assert.equal(installed.body.value.id, 'dyz-gongwen-skills')
   assert.equal(installed.body.value.files, 2)
   assert.equal(typeof installed.body.value.files, 'number')
   assert.ok(installed.body.value.bytes > 0)
-  assert.equal(installed.body.value.version, '1.0.0')
-  assert.equal(installed.body.value.license, 'proprietary')
+  assert.equal(installed.body.value.version, '1.1.0')
+  assert.equal(installed.body.value.license, 'PolyForm-Noncommercial-1.0.0')
   assert.equal(invalidations.length, 1)
 
   const listed = await callRoute(harness.routes, ROUTES.installed, { method: 'GET' })
   assert.equal(listed.body.value.root, harness.installRoot)
   assert.equal(listed.body.value.count, 1)
   const record = listed.body.value.skills[0]
-  assert.equal(record.id, 'official-source-qa')
+  assert.equal(record.id, 'dyz-gongwen-skills')
   assert.equal(record.managed, true)
-  assert.equal(record.version, '1.0.0')
+  assert.equal(record.version, '1.1.0')
   assert.ok(Number.isFinite(record.installedAt))
 
-  const duplicate = await callRoute(harness.routes, ROUTES.install, { method: 'POST', body: { id: 'official-source-qa' } })
+  const duplicate = await callRoute(harness.routes, ROUTES.install, { method: 'POST', body: { id: 'dyz-gongwen-skills' } })
   assert.equal(duplicate.status, 409)
   assert.equal(duplicate.body.ok, false)
 
-  const removed = await callRoute(harness.routes, ROUTES.uninstall, { method: 'POST', body: { id: 'official-source-qa' } })
+  const removed = await callRoute(harness.routes, ROUTES.uninstall, { method: 'POST', body: { id: 'dyz-gongwen-skills' } })
   assert.equal(removed.status, 200)
-  assert.equal(removed.body.value.id, 'official-source-qa')
+  assert.equal(removed.body.value.id, 'dyz-gongwen-skills')
   assert.equal(removed.body.value.trashedTo.startsWith(join(harness.installRoot, '.trash')), true)
   assert.equal(existsSync(removed.body.value.trashedTo), true)
-  assert.equal(existsSync(join(harness.installRoot, 'official-source-qa')), false)
+  assert.equal(existsSync(join(harness.installRoot, 'dyz-gongwen-skills')), false)
   assert.equal(invalidations.length, 2)
 
-  const again = await callRoute(harness.routes, ROUTES.uninstall, { method: 'POST', body: { id: 'official-source-qa' } })
+  const again = await callRoute(harness.routes, ROUTES.uninstall, { method: 'POST', body: { id: 'dyz-gongwen-skills' } })
   assert.equal(again.status, 404)
 
   const after = await callRoute(harness.routes, ROUTES.installed, { method: 'GET' })

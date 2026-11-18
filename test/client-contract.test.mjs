@@ -7,7 +7,7 @@
  *      react（含一个极小的 hooks 运行时，可以真正渲染一遍页面树）+ 官方原语 stub；
  *   3. 注册：侧栏行（id/order/label zh+en/图标）、主区 key/inject 面、apply 容错；
  *   4. 纯函数：filterSkills / categoryCounts / summarizeMeta / relativeTime / panelId / panelLabel；
- *   5. 页面结构：标题、搜索框、10 枚分类 Pill、17 行、已安装计数、空态/加载态/错误态、
+ *   5. 页面结构：标题、搜索框、10 枚分类 Pill、全量技能行、已安装计数、空态/加载态/错误态、
  *      视图与分类切换、详情 Modal 与安装/卸载动作。
  *
  * 注意：stub 的 React 只实现页面真正用到的 hooks（useState/useEffect/useMemo/useRef），
@@ -26,6 +26,11 @@ const BUNDLE_PATH = join(REPO_ROOT, 'client.js')
 const SNAPSHOT_PATH = join(REPO_ROOT, 'catalog.snapshot.json')
 const BUNDLE_SOURCE = readFileSync(BUNDLE_PATH, 'utf8')
 const SNAPSHOT = JSON.parse(readFileSync(SNAPSHOT_PATH, 'utf8'))
+
+/** 随包快照的条数一律从这里取，刷新快照时不用改断言。 */
+const TOTAL_SKILLS = SNAPSHOT.skills.length
+/** 某个分类在快照里的条数。 */
+const countOf = (category) => SNAPSHOT.skills.filter((skill) => skill.category === category).length
 const NOW = Date.now()
 
 const PANEL_ID = 'financial-skills'
@@ -299,7 +304,7 @@ async function flush() {
 }
 //#endregion
 
-//#region 数据 fixture（基于随包快照：9 类 / 17 条）
+//#region 数据 fixture（基于随包快照：9 类 / 全量技能）
 function buildFixture() {
   const installedIndexes = new Set([0, 6])
   const categories = SNAPSHOT.categories.map((entry) => ({
@@ -685,7 +690,7 @@ test('filterSkills：中英文名称 / 摘要 / 标签 / id 搜索，分类与�
   assert.ok(testExports.filterSkills(skills, { query: 'CONSUMER' }).length >= 1, '大小写不敏感')
 
   const byCategory = testExports.filterSkills(skills, { category: 'consumer-protection' })
-  assert.equal(byCategory.length, 6)
+  assert.equal(byCategory.length, countOf('consumer-protection'))
   assert.equal(byCategory.every((skill) => skill.category === 'consumer-protection'), true)
 
   const installedOnly = testExports.filterSkills(skills, { view: 'installed' })
@@ -698,32 +703,34 @@ test('filterSkills：中英文名称 / 摘要 / 标签 / id 搜索，分类与�
 
   // 顺序稳定，且不修改入参
   assert.deepEqual(testExports.filterSkills(skills, {}).map((skill) => skill.id), skills.map((skill) => skill.id))
-  assert.equal(skills.length, 17)
+  assert.equal(skills.length, TOTAL_SKILLS)
   client.restore()
 })
 
-test('categoryCounts：9 个分类、17 条、0 条分类保留、未归类单独计', () => {
+test('categoryCounts：分类计数与技能总数一致、0 条分类保留、未归类单独计', () => {
   const client = loadClient({ withDocument: false })
   const testExports = client.exports.__test
   const fixture = buildFixture()
   const counts = testExports.categoryCounts(fixture.catalog.categories, fixture.catalog.skills)
-  assert.equal(counts.all, 17)
+  assert.equal(counts.all, TOTAL_SKILLS)
   assert.equal(counts.unclassified, 0)
-  assert.equal(counts.byCategory['consumer-protection'], 6)
-  assert.equal(counts.byCategory['office-design'], 5)
-  assert.equal(counts.byCategory['data-tech'], 5)
-  assert.equal(counts.byCategory['compliance-legal'], 1)
-  assert.equal(counts.byCategory['risk-management'], 0)
-  assert.equal(counts.byCategory['invest-trading'], 0)
-  assert.equal(counts.byCategory['product-business'], 0)
-  assert.equal(counts.byCategory['other'], 0)
   assert.equal(Object.keys(counts.byCategory).length, 9)
+  assert.equal(
+    Object.entries(counts.byCategory).reduce((sum, [, value]) => sum + value, 0),
+    TOTAL_SKILLS,
+  )
+  for (const category of fixture.catalog.categories) {
+    assert.equal(counts.byCategory[category.id], countOf(category.id), category.id)
+  }
 
-  const withOrphan = counts
+  // 没在技能里出现过的分类仍要保留并显示 0
+  const withEmpty = testExports.categoryCounts([...fixture.catalog.categories, { id: 'empty-category' }], fixture.catalog.skills)
+  assert.equal(withEmpty.byCategory['empty-category'], 0)
+  assert.equal(Object.keys(withEmpty.byCategory).length, 10)
+
   const orphanCount = testExports.categoryCounts(fixture.catalog.categories, [{ category: 'not-declared' }])
   assert.equal(orphanCount.all, 1)
   assert.equal(orphanCount.unclassified, 1)
-  assert.equal(withOrphan.all, 17)
   client.restore()
 })
 
@@ -774,7 +781,7 @@ test('panelId / panelLabel：id 固定、label 跟随 document.lang', async () =
 //#endregion
 
 //#region 5. 渲染页面：结构
-test('渲染：页头 / 搜索 / 视图切换 / 10 枚分类 Pill / 17 行 / 已安装计数', async () => {
+test('渲染：页头 / 搜索 / 视图切换 / 10 枚分类 Pill / 全量技能行 / 已安装计数', async () => {
   await withClient({}, async (client) => {
     const mounted = mountComponents(client)
     const PanelPage = mounted.main.component
@@ -825,18 +832,14 @@ test('渲染：页头 / 搜索 / 视图切换 / 10 枚分类 Pill / 17 行 / 已
     assert.equal(pills.length, 10, '「全部」+ 9 个分类 Pill')
     const allPill = pills.find((pill) => pill.props['data-category'] === 'all')
     assert.ok(textOf(allPill).includes('全部'))
-    assert.ok(textOf(allPill).includes('17'))
+    assert.ok(textOf(allPill).includes(String(TOTAL_SKILLS)))
     const consumerPill = pills.find((pill) => pill.props['data-category'] === 'consumer-protection')
     assert.ok(textOf(consumerPill).includes('消费者保护'))
-    assert.ok(textOf(consumerPill).includes('6'))
-    const emptyCategoryPill = pills.find((pill) => pill.props['data-category'] === 'risk-management')
-    assert.ok(emptyCategoryPill !== undefined, '0 条分类也要显示')
-    assert.ok(textOf(emptyCategoryPill).includes('风险管理'))
-    assert.ok(textOf(emptyCategoryPill).includes('0'))
+    assert.ok(textOf(consumerPill).includes(String(countOf('consumer-protection'))))
     assert.equal(pills.filter((pill) => pill.props.active === true).length, 1, '同时只有一枚分类 Pill 选中')
 
     const rows = elements(tree, (node) => typeof node.type === 'function' && node.type.name === 'SkillRow')
-    assert.equal(rows.length, 17, '17 条技能行')
+    assert.equal(rows.length, TOTAL_SKILLS, '技能行数量与快照一致')
     assert.equal(elements(tree, (node) => node.props !== undefined && node.props['data-dsh-part'] === 'skill-row').length, 0, 'SkillRow 是组件节点，应由组件内部渲染 li')
     const installedRows = rows.filter((row) => row.props.skill.installed === true)
     assert.equal(installedRows.length, 2)
@@ -849,7 +852,7 @@ test('渲染：页头 / 搜索 / 视图切换 / 10 枚分类 Pill / 17 行 / 已
     assert.equal(list.length, 1)
     const footerCounts = byPart(tree, 'footer-counts')
     assert.equal(footerCounts.length, 1)
-    assert.equal(textOf(footerCounts[0]), '共 17 个 · 已安装 2 个 · 显示 17 个')
+    assert.equal(textOf(footerCounts[0]), `共 ${TOTAL_SKILLS} 个 · 已安装 2 个 · 显示 ${TOTAL_SKILLS} 个`)
     assert.equal(elements(tree, (node) => node.type === 'img').length, 0, '不得渲染任何 img')
   })
 })
@@ -921,6 +924,9 @@ test('渲染：视图切换 / 分类筛选 / 空分类 / 搜索 / Esc 清空 / �
     const mounted = mountComponents(client)
     const PanelPage = mounted.main.component
     const fixture = buildFixture()
+    // 让「风险管理」成为一个真正 0 条的分类，验证空分类不被隐藏
+    fixture.catalog.skills = fixture.catalog.skills.filter((skill) => skill.category !== 'risk-management')
+    const visibleTotal = TOTAL_SKILLS - countOf('risk-management')
     const fake = createFakeApi(fixture)
     let tree
 
@@ -929,7 +935,7 @@ test('渲染：视图切换 / 分类筛选 / 空分类 / 搜索 / Esc 清空 / �
     client.mini.render(PanelPage, { api: fake.api })
     await flush()
     tree = client.mini.render(PanelPage, { api: fake.api })
-    assert.equal(rowsOf().length, 17)
+    assert.equal(rowsOf().length, visibleTotal)
 
     // 切到「已安装」
     let segmented = elements(tree, (node) => node.type === client.primitives.SegmentedControl)[0]
@@ -954,12 +960,12 @@ test('渲染：视图切换 / 分类筛选 / 空分类 / 搜索 / Esc 清空 / �
     assert.equal(elements(tree, (node) => node.type === client.primitives.SegmentedControl)[0].props.value, 'installed')
     elements(tree, (node) => node.type === client.primitives.SegmentedControl)[0].props.onChange('all')
     tree = client.mini.render(PanelPage, { api: fake.api })
-    assert.equal(rowsOf().length, 17)
+    assert.equal(rowsOf().length, visibleTotal)
 
-    // 按分类叠加：消费者保护 6 条
+    // 按分类叠加：消费者保护
     elements(tree, (node) => node.type === client.primitives.Pill && node.props['data-category'] === 'consumer-protection')[0].props.onClick()
     tree = client.mini.render(PanelPage, { api: fake.api })
-    assert.equal(rowsOf().length, 6)
+    assert.equal(rowsOf().length, countOf('consumer-protection'))
     elements(tree, (node) => node.type === client.primitives.Pill && node.props['data-category'] === 'all')[0].props.onClick()
     tree = client.mini.render(PanelPage, { api: fake.api })
 
@@ -986,7 +992,7 @@ test('渲染：视图切换 / 分类筛选 / 空分类 / 搜索 / Esc 清空 / �
     input = elements(tree, (node) => node.type === client.primitives.Input)[0]
     input.props.onKeyDown({ key: 'Escape' })
     tree = client.mini.render(PanelPage, { api: fake.api })
-    assert.equal(rowsOf().length, 17)
+    assert.equal(rowsOf().length, visibleTotal)
 
     // 无结果空态
     input = elements(tree, (node) => node.type === client.primitives.Input)[0]
@@ -1019,7 +1025,7 @@ test('渲染：刷新走 catalog?refresh=1，失败降级为错误行且保留�
     await flush()
     let tree = client.mini.render(mounted.main.component, { api: fake.api })
     const rowsOf = () => elements(tree, (node) => typeof node.type === 'function' && node.type.name === 'SkillRow')
-    assert.equal(rowsOf().length, 17)
+    assert.equal(rowsOf().length, TOTAL_SKILLS)
 
     const refreshButton = elements(tree, (node) => node.type === client.primitives.Button && textOf(node) === '刷新')[0]
     assert.ok(refreshButton !== undefined, '页脚必须有刷新按钮')
@@ -1029,7 +1035,7 @@ test('渲染：刷新走 catalog?refresh=1，失败降级为错误行且保留�
     tree = client.mini.render(mounted.main.component, { api: fake.api })
     const allText = texts(tree).join('\n')
     assert.ok(allText.includes('刷新失败：ETIMEDOUT'), '刷新失败要有一条错误行（不弹 alert）')
-    assert.equal(rowsOf().length, 17, '刷新失败不得清空已有目录')
+    assert.equal(rowsOf().length, TOTAL_SKILLS, '刷新失败不得清空已有目录')
     assert.ok(elements(tree, (node) => node.type === client.primitives.Button && textOf(node) === '刷新').length >= 1, '失败后按钮恢复可点')
   })
 })
@@ -1049,7 +1055,7 @@ test('渲染：快照 / 离线模式明确标注，不得说成实时', async ()
     assert.ok(allText.includes('目录抓取异常：ENOTFOUND upstream'))
     assert.equal(allText.includes('上游实时目录'), false, '快照不得标注为实时')
     assert.equal(allText.includes('刚刚刷新'), false, '快照不得说成「刚刚刷新」')
-    assert.equal(elements(tree, (node) => typeof node.type === 'function' && node.type.name === 'SkillRow').length, 17, '快照模式仍可浏览')
+    assert.equal(elements(tree, (node) => typeof node.type === 'function' && node.type.name === 'SkillRow').length, TOTAL_SKILLS, '快照模式仍可浏览')
   })
 
   await withClient({}, async (client) => {

@@ -9,6 +9,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/), 
 
 - **GitHub 来源支持「技能就在仓库根」**：上游自 2026-11-17 起收录了一批根目录布局的仓库（`source.path: ""`）。此前归一化会把空 path 改写成 `plugins/<id>`，这些技能的详情与安装全部 404。现在空 path 原样保留，`resolve` 模板里的 `{path}` 会被真正替换掉（不再留下字面量 `{path}`），raw 地址也不会出现 `//`。
 - **支持 `source.exclude`**：上游对纯展示资源（`examples/`、`assets/showcase/`、`docs/` 等）声明了排除前缀，此前会被一并取回，容易撞上文件数 / 总量上限。现在按前缀跳过，与上游取件脚本 `install.py` 的行为一致。
+- **非 ASCII 文件名不再被静默丢弃**：`isSafeRelativePath` 从 ASCII 白名单改为黑名单（只挡路径逃逸、控制字符、Windows 保留字符与尾点 / 尾空格），中文目录 / 文件名（如 `参考/`、`示例（一）/`、`党建语料/`）可以正常列出、下载、解压与安装；路径被拒绝时改为向 logger 告警，不再悄悄少文件。raw / contents API URL 也按段编码，避免中文路径拼出非法 URL。
+- **补齐 loopback 围栏**：除 `remoteAddress` 外增加 `Host` 校验（挡 DNS rebinding），POST 要求 `application/json` 且 `Origin`（若有）与 `Host` 同源（挡 `text/plain` 简单请求 CSRF）。非本机 Host 返回 403 `unexpected host`，非 JSON 返回 415。
+- **随包快照刷新**：`catalog.snapshot.json` 更新到上游 2026-11-18 版本（9 类 171 条），`official-source-qa` 已被上游移除；README / README.en / docs 不再宣称「唯一 vendored 条目」，条数改为「以清单 `updated` 为准」的不写死表述。测试改为按快照条数 / 结构性事实断言，刷新快照不必再同步改数字。
 
 ## 0.1.1 — 2026-11-13
 
@@ -25,7 +28,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/), 
 - 双半区插件：Host 半区（`index.js` + `lib/`）负责目录抓取、缓存、安装/卸载与路由；浏览器半区（`client.js`）是手写 `__ModuleLoader__` bundle，无构建步骤。
 - 左侧栏入口「**金融业技能**」（`sidebar.panellist`，`id: financial-skills`，`order: 25`），与官方「插件」「定时任务」入口共存不抢位。
 - 右侧整页「**金融行业skills精选**」：搜索、9 类分类筛选（含数量）、全部/已安装切换、详情弹窗（Markdown 正文 + 文件清单 + license）、一键安装/卸载、页脚数据源与刷新。
-- 数据源为 `openfcp/awesome-financial-skills` 的 `catalog.json`（当前 9 类 17 个技能），按 raw.githubusercontent → fastly.jsdelivr → gcore.jsdelivr → cdn.jsdelivr 四级降级抓取，6 小时磁盘缓存，全部失败时回落到随包 `catalog.snapshot.json`，并在 `meta` 中如实标注 `source / offline / stale / error`。
+- 数据源为 `openfcp/awesome-financial-skills` 的 `catalog.json`（发布时为 9 类 17 个技能），按 raw.githubusercontent → fastly.jsdelivr → gcore.jsdelivr → cdn.jsdelivr 四级降级抓取，6 小时磁盘缓存，全部失败时回落到随包 `catalog.snapshot.json`，并在 `meta` 中如实标注 `source / offline / stale / error`。
 - **兼容上游目录 `format: 3`（2026-11-13 迁移）**：上游改为「只存引用、不存正文」，删除 `plugins/<id>/`，新增顶层 `resolve` 取回模板（skillhub zip：`https://api.skillhub.cn/api/v1/download?slug={slug}`；github：raw + api 模板）与每条的来源坐标（skillhub `{namespace,slug}` / github `{repo,path,ref,vendored}`）。安装/详情按 `source.type` 取回正文：SkillHub 下载 zip 并解压，GitHub 逐文件 raw → API → jsDelivr；唯一 vendored 的 `official-source-qa`（正文在 `skills/official-source-qa/`）同样走 GitHub 坐标。来源记录 `.financial-skills.json` 增加 `sourceType` 与来源坐标字段；引用不可达时明确报错并清理暂存目录，不产生半装技能。旧 `format: 2` 清单/缓存/快照/`plugins/<id>/` fixture 仍兼容。
 - 6 条 Host 路由：`GET /api/financial-skills/{catalog,installed,detail,health}`、`POST /api/financial-skills/{install,uninstall}`，统一 `{ok,value}` / `{ok,error}` 信封。
 - 安全围栏：loopback-only（否则 403）、客户端只传 id（文法校验）、路径逃逸防护、staging + rename 安装、文件数/单文件/总量上限（200 / 2 MB / 16 MB）、卸载移入 `.trash` 而非删除。
@@ -38,7 +41,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/), 
 
 ### 已知边界
 
-- 上游目前有 5 个分类 0 条：UI 仍显示分类（数量 0），空结果给出「该分类暂无工具」而不是隐藏。
+- 0.1.0 时上游有 5 个分类 0 条（2026-11-18 版已全部有内容）：UI 仍显示分类（数量 0），空结果给出「该分类暂无工具」而不是隐藏。
 - 部分技能 `license: proprietary`：列表行不展示 license，详情里如实显示；安装只是在本地下载使用，不代表获得再分发授权。
 - 安装/详情依赖网络（SkillHub / GitHub / jsDelivr）；断网或引用失效时页面给出可操作错误，不出现空白，也不会留下半装目录。SkillHub 条目的 `namespace` 仅用于展示与去重，zip 下载只需要 `slug`。
-- 只做索引与本地安装，不内置或搬运任何技能正文（唯一例外是上游自己 vendored 的 `official-source-qa`）；清单只存引用，正文版权与许可证归各自作者。
+- 只做索引与本地安装，不内置或搬运任何技能正文（0.1.0 时上游有一条自己 vendored 的 `official-source-qa`，该条目已于 2026-11-18 从上游清单移除）；清单只存引用，正文版权与许可证归各自作者。

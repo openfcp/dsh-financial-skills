@@ -33,14 +33,14 @@ DSH 实例的真实浏览器渲染（1440×900）。</sub></p>
 - **右侧整页**：「金融行业skills精选」——把 [openfcp/awesome-financial-skills](https://github.com/openfcp/awesome-financial-skills) 这份为金融从业者策展的技能清单，做成可以直接浏览、检索、安装的插件目录；
 - 页面里的每一行，安装后就是一个 DSH 原生技能（写进 `<DSH_HOME>/skills/<id>/SKILL.md`），当前对话的技能目录里能立刻看到。
 
-**数据源只有一个**：[`catalog.json`](https://github.com/openfcp/awesome-financial-skills/blob/main/catalog.json)（站点 <https://openfcp.github.io/awesome-financial-skills/> 的全部内容也由它构建）。上游已升级为 **`format: 3`**：清单**只存引用、不存技能正文**，当前 **9 个分类、17 个技能**（消费者保护 6、办公与设计 5、数据与技术 5、合规与法律 1；其余 5 类开放收录中，页面仍显示分类并标注数量 0）。
+**数据源只有一个**：[`catalog.json`](https://github.com/openfcp/awesome-financial-skills/blob/main/catalog.json)（站点 <https://openfcp.github.io/awesome-financial-skills/> 的全部内容也由它构建）。上游已升级为 **`format: 3`**：清单**只存引用、不存技能正文**，当前 **9 个分类、171 条技能**（条目数与分类计数以清单的 `updated` 字段为准，插件不写死）。
 
-本插件**不内置、不搬运**任何技能正文（上游唯一 vendored 的条目是 `official-source-qa`，正文在它自己的仓库里）。安装/预览时按技能的 `source.type` 与清单顶层 `resolve` 模板，从**原始出处**取回正文：
+本插件**不内置、不搬运**任何技能正文。安装/预览时按技能的 `source.type` 与清单顶层 `resolve` 模板，从**原始出处**取回正文：
 
 | 来源 | 清单里的坐标 | 安装时如何取回 |
 | --- | --- | --- |
-| SkillHub（16 条） | `source.namespace` + `source.slug` | 按 `resolve.skillhub` 模板 GET 得到 zip，解压（`SKILL.md` 在根目录） |
-| GitHub（1 条：`official-source-qa`，`vendored: true`） | `source.repo` / `source.path` / `source.ref` | 按 `resolve.github` 的 raw 模板逐文件取；raw 不可达走 GitHub API，再不可达走 jsDelivr 镜像 |
+| SkillHub | `source.namespace` + `source.slug` | 按 `resolve.skillhub` 模板 GET 得到 zip，解压（`SKILL.md` 在根目录） |
+| GitHub | `source.repo` / `source.path` / `source.ref`（`path` 可为空，表示技能就在仓库根；`source.exclude` 里的前缀不取回） | 按 `resolve.github` 的 raw 模板逐文件取；raw 不可达走 GitHub API，再不可达走 jsDelivr 镜像 |
 
 引用不可达（SkillHub 不可用、GitHub/镜像都失败）时，安装会**明确报错并清理暂存目录**——磁盘上不会留下装了一半的技能。`format: 2` 的旧清单/旧缓存/旧 fixture（`plugins/<id>/` 目录）仍然兼容。
 
@@ -48,7 +48,7 @@ DSH 实例的真实浏览器渲染（1440×900）。</sub></p>
 
 1. 打开 DSH，左侧栏多出「金融技能」入口（图标是银行建筑线条：三角山墙 + 三根柱子 + 地面线，16×16 stroke 风格）；
 2. 点击后，右侧主区整页变成「金融行业skills精选」：顶部标题 + 副标题，下面是搜索框、9 个分类胶囊、全部/已安装切换；
-3. 17 条技能按分类列出，每条显示名称、摘要、分类、版本、来源（许可证在详情里如实显示）；
+3. 技能按分类列出，每条显示名称、摘要、分类、版本、来源（许可证在详情里如实显示）；
 4. 点名称打开详情弹窗：SKILL.md 正文（Markdown 渲染）、文件清单、总大小、许可证与来源坐标；
 5. 点「安装」，技能被写进本地技能目录，按钮变成「已安装 / 卸载」；
 6. 点「卸载」，技能目录被移到 `.trash`（不直接删除，可手动找回）。
@@ -91,7 +91,7 @@ dsh plugin --profile desktop add link:$(pwd)/dsh-financial-skills
 
 > 只关掉窗口、再点 Dock 图标打开，**不算重启**——后台进程还在跑，插件不会加载。这是最容易踩的坑。
 
-装好后想确认：侧栏出现「金融技能」→ 点开后页面显示数据源、更新时间与 17 条技能。
+装好后想确认：侧栏出现「金融技能」→ 点开后页面显示数据源、更新时间与完整技能清单。
 
 ## 卸载
 
@@ -123,8 +123,8 @@ dsh plugin --profile desktop remove dsh-financial-skills
 
 ## 已知边界
 
-- **清单只存引用**：除了上游自己 vendored 的 `official-source-qa`，技能正文都不随清单分发；插件只做索引与本地安装，不搬运、不再分发正文。正文版权与许可证归各自作者，详情里如实显示 `license`。
-- **部分技能是专有许可**：16 条 SkillHub 技能里多数 `license: proprietary`；安装只代表下载到本地使用，不代表获得再分发授权。
+- **清单只存引用**：技能正文都不随清单分发；插件只做索引与本地安装，不搬运、不再分发正文。正文版权与许可证归各自作者，详情里如实显示 `license`。
+- **部分技能是专有许可**：不少 SkillHub 技能标注 `license: proprietary`；安装只代表下载到本地使用，不代表获得再分发授权。
 - **安装依赖网络**：SkillHub 条目从 `api.skillhub.cn` 取 zip，GitHub 条目从 raw / API / jsDelivr 取文件。断网或引用失效时页面给出可操作错误，不会空白，也不会留下半装目录。
 - **SkillHub 的 `namespace` 只用于展示与去重**，下载 zip 只需要 `slug`；清单的 `resolve` 模板是唯一取回规则，客户端不能传 URL。
 - **格式 2 兼容**：缺少 `resolve` 的旧清单回落到内置默认模板；旧 `plugins/<id>/` 目录布局与旧缓存/旧快照仍可读。
@@ -171,7 +171,7 @@ Host 半区只注册 **6 条**精确匹配 `GET`/`POST` 路由（客户端只传
 
 ## 安全模型
 
-- **只服务本机**：每条路由先校验连接来源是 loopback（`127.0.0.0/8`、`::1`、`::ffff:127.0.0.1`），否则 403。不监听公网、不做账号体系。
+- **只服务本机**：每条路由先校验连接来源是 loopback（`127.0.0.0/8`、`::1`、`::ffff:127.0.0.1`），且 `Host` 必须是 loopback 名字（挡 DNS rebinding）；POST 还要求 `application/json` 且 `Origin` 与 `Host` 同源（挡简单请求 CSRF），否则 403/415。不监听公网、不做账号体系。
 - **只认 id**：客户端只能传技能 id（文法 `/^[a-z0-9][a-z0-9-]{0,63}$/`），不能传 URL、不能传路径；非法 id 直接 400。取正文的地址只来自清单里的 `source` 坐标 + `resolve` 模板，客户端无法指定下载地址。
 - **路径围栏**：安装/卸载只从 id 重建路径，写盘前解析出的绝对路径必须仍在 `installRoot` 之内，防止 `../` 路径逃逸。
 - **先暂存再落位**：安装先下载到 `installRoot/.staging-<id>-<随机>/`，校验文件数（≤200）、单文件（≤2 MB）、总量（≤16 MB）、相对路径文法后，整目录 `rename` 到 `installRoot/<id>`；目标已存在返回 409；任一步失败清理暂存并返回错误，磁盘保持原状。
@@ -213,7 +213,7 @@ npm test                                              # 单元 + 半区契约测
 node test/e2e-remote.mjs --help                       # 全部 E2E 选项
 ```
 
-E2E 会：在工作区下的 `.e2e/` 建**独立 DSH_HOME**（绝不碰你正在用的 `~/.dsh`）→ 从官方 `web` 模板克隆 profile → 把本插件按真实 bundle 方式装进 profile → 生成 `--patch` 配置覆盖并用 `--dump-config` 预检 → 起一个 `--no-open --port 0` 的 Host → 用 `/connect` 换 cookie → 断言插件挂载、6 条路由、9 类 17 条目录及其来源坐标、`client.js` 产物，并用本地 fixture（`plugins/<id>/` 兼容布局）完整跑一遍安装（`SKILL.md` + 带 `sourceType` 的 `.financial-skills.json` 来源记录）与卸载（移入 `.trash`）。不花模型 token。
+E2E 会：在工作区下的 `.e2e/` 建**独立 DSH_HOME**（绝不碰你正在用的 `~/.dsh`）→ 从官方 `web` 模板克隆 profile → 把本插件按真实 bundle 方式装进 profile → 生成 `--patch` 配置覆盖并用 `--dump-config` 预检 → 起一个 `--no-open --port 0` 的 Host → 用 `/connect` 换 cookie → 断言插件挂载、6 条路由、随包快照的分类与条目数及其来源坐标、`client.js` 产物，并用本地 fixture（`plugins/<id>/` 兼容布局）完整跑一遍安装（`SKILL.md` + 带 `sourceType` 的 `.financial-skills.json` 来源记录）与卸载（移入 `.trash`）。不花模型 token。
 
 细节、故障排查与日志位置见 [docs/E2E.md](docs/E2E.md)。
 

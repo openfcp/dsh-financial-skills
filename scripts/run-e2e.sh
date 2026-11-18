@@ -18,7 +18,7 @@
 #   DSH_E2E_HOME               isolated DSH_HOME (default: <repo>/.e2e/home)
 #   DSH_E2E_PROFILE            profile name   (default: fs-e2e)
 #   DSH_E2E_PORT               listen port    (default: 0 = OS picks a free one)
-#   DSH_E2E_FIXTURE_SKILL      fixture skill id (default: official-source-qa)
+#   DSH_E2E_FIXTURE_SKILL      fixture skill id (default: dyz-gongwen-skills)
 set -eu
 
 here=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)

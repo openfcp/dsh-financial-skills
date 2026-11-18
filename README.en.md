@@ -33,14 +33,14 @@ browser against an isolated DSH instance (1440×900).</sub></p>
 - **Full-page view** — 「金融行业skills精选」, a browsable and installable front end for the curated [openfcp/awesome-financial-skills](https://github.com/openfcp/awesome-financial-skills) catalog.
 - **Installed skills are ordinary DSH skills** — each install writes `<DSH_HOME>/skills/<id>/SKILL.md`, so the skill shows up in the current session's skill list immediately.
 
-**One source of truth**: [`catalog.json`](https://github.com/openfcp/awesome-financial-skills/blob/main/catalog.json) (the site <https://openfcp.github.io/awesome-financial-skills/> is built from it). Upstream is now **`format: 3`**: the catalog **stores references only, never skill bodies**, and currently ships **9 categories and 17 skills** — 消费者保护 6, 办公与设计 5, 数据与技术 5, 合规与法律 1; the other 5 categories are open for submissions and still render with a count of 0.
+**One source of truth**: [`catalog.json`](https://github.com/openfcp/awesome-financial-skills/blob/main/catalog.json) (the site <https://openfcp.github.io/awesome-financial-skills/> is built from it). Upstream is now **`format: 3`**: the catalog **stores references only, never skill bodies**, and currently ships **9 categories and 171 skills** (counts follow the catalog's `updated` field; the plugin never hard-codes them).
 
-The plugin never bundles or copies skill bodies (the only vendored entry is upstream's own `official-source-qa`, whose body lives in that repository). Install and preview fetch the content from the **original source**, using the skill's `source.type` plus the top-level `resolve` templates:
+The plugin never bundles or copies skill bodies. Install and preview fetch the content from the **original source**, using the skill's `source.type` plus the top-level `resolve` templates:
 
 | Source | Coordinates in the catalog | How install fetches it |
 | --- | --- | --- |
-| SkillHub (16 entries) | `source.namespace` + `source.slug` | GET a zip from the `resolve.skillhub` template, then extract (`SKILL.md` at the root) |
-| GitHub (1 entry: `official-source-qa`, `vendored: true`) | `source.repo` / `source.path` / `source.ref` | Fetch files via the `resolve.github` raw template; fall back to the GitHub API, then the jsDelivr mirror |
+| SkillHub | `source.namespace` + `source.slug` | GET a zip from the `resolve.skillhub` template, then extract (`SKILL.md` at the root) |
+| GitHub | `source.repo` / `source.path` / `source.ref` (`path` may be empty, meaning the skill sits at the repo root; prefixes in `source.exclude` are skipped) | Fetch files via the `resolve.github` raw template; fall back to the GitHub API, then the jsDelivr mirror |
 
 If a reference is unreachable (SkillHub down, GitHub and mirrors failing), install returns a **clear error and cleans up its staging directory** — no half-installed skill is left on disk. Old `format: 2` catalogs/caches/fixtures (the `plugins/<id>/` directory layout) remain supported.
 
@@ -48,7 +48,7 @@ If a reference is unreachable (SkillHub down, GitHub and mirrors failing), insta
 
 1. A **金融技能** sidebar entry appears in DSH — a 16×16 line icon of a classical bank facade (pediment, three columns, ground line);
 2. Clicking it replaces the main area with the full-page 「金融行业skills精选」: title and subtitle, a search box, 9 category pills, and an All / Installed switch;
-3. 17 skills are listed with name, summary, category, version and source (the license is shown honestly in the detail view);
+3. Skills are listed with name, summary, category, version and source (the license is shown honestly in the detail view);
 4. Clicking a name opens a detail modal with the rendered `SKILL.md` body, file list, total size, license and source coordinates;
 5. **Install** writes the skill into the local skills directory and turns the button into Installed / Uninstall;
 6. **Uninstall** moves the directory under `.trash` instead of deleting it, so you can recover it manually.
@@ -91,7 +91,7 @@ Quit from the menu bar (**DeepSeek Harness → Quit**, or **Cmd+Q**), make sure 
 
 > Closing the window and reopening from the Dock is **not** a restart — the background process keeps running and the plugin will not load. This is the number-one gotcha.
 
-To verify: the **金融技能** entry appears in the sidebar, and the page shows the data source, update time and 17 skills.
+To verify: the **金融技能** entry appears in the sidebar, and the page shows the data source, update time and the full skill catalog.
 
 ## Uninstall
 
@@ -124,7 +124,7 @@ Fully restart afterwards. Skill directories installed through this plugin (`<DSH
 
 ## Known boundaries
 
-- **The catalog is an index of references**: apart from upstream's vendored `official-source-qa`, skill bodies are not distributed with the catalog. This plugin only indexes and installs locally — it never re-hosts or redistributes bodies. Copyright and licenses stay with the original authors; the detail view shows `license` honestly.
+- **The catalog is an index of references**: skill bodies are not distributed with the catalog. This plugin only indexes and installs locally — it never re-hosts or redistributes bodies. Copyright and licenses stay with the original authors; the detail view shows `license` honestly.
 - **Some skills are proprietary**: most of the 16 SkillHub entries are `license: proprietary`; installing only means downloading for local use, not a redistribution license.
 - **Installs need network access**: SkillHub entries download a zip from `api.skillhub.cn`; GitHub entries fetch files from raw / API / jsDelivr. When the network or a reference fails, the page shows an actionable error instead of going blank, and no half-installed directory is left behind.
 - **SkillHub `namespace` is display/dedup only**; the zip download needs just the `slug`. The catalog's `resolve` templates are the only fetch rules — the client can never supply a URL.
@@ -170,7 +170,7 @@ Envelope: success `{ ok: true, value }`; failure `{ ok: false, error }` with sta
 
 ## Security model
 
-- **Loopback only** — every route first checks that the connection comes from loopback (`127.0.0.0/8`, `::1`, `::ffff:127.0.0.1`); otherwise 403. Nothing listens publicly and there is no account system.
+- **Loopback only** — every route first checks that the connection comes from loopback (`127.0.0.0/8`, `::1`, `::ffff:127.0.0.1`) and that `Host` is a loopback name (blocking DNS rebinding); POST additionally requires `application/json` with a same-origin `Origin` (blocking simple-request CSRF), otherwise 403/415. Nothing listens publicly and there is no account system.
 - **Ids only** — the client can send a skill id (grammar `/^[a-z0-9][a-z0-9-]{0,63}$/`) and nothing else; URLs and paths are rejected. Invalid ids return 400. Fetch addresses come only from the catalog's `source` coordinates plus `resolve` templates — the client can never choose a download URL.
 - **Path fence** — install/uninstall rebuild paths from the id alone; before writing, the resolved absolute path must stay inside `installRoot`, which blocks `../` escapes.
 - **Stage, then rename** — an install downloads into `installRoot/.staging-<id>-<random>/`, validates file count (<=200), per-file size (<=2 MB), total size (<=16 MB) and relative-path grammar, then renames the whole directory to `installRoot/<id>`. An existing target returns 409; any failure cleans up staging and returns an error, leaving the disk unchanged.
@@ -212,7 +212,7 @@ npm test                                              # unit + half-contract tes
 node test/e2e-remote.mjs --help                       # every E2E option
 ```
 
-The E2E: creates an **isolated DSH_HOME** under the repo's `.e2e/` (it never touches your live `~/.dsh`) → clones a profile from the official `web` template → installs this plugin exactly like a real bundle → writes a `--patch` config override and preflights it with `--dump-config` → boots a Host with `--no-open --port 0` → authenticates through `/connect` → asserts the plugin is active, all 6 routes, the 9-category / 17-skill catalog with source coordinates and the served `client.js`, then runs a full install (`SKILL.md` + `.financial-skills.json` provenance including `sourceType`) and uninstall (moved to `.trash`) against a local `plugins/<id>/` fixture (the format-2-compatible layout). No model tokens are spent.
+The E2E: creates an **isolated DSH_HOME** under the repo's `.e2e/` (it never touches your live `~/.dsh`) → clones a profile from the official `web` template → installs this plugin exactly like a real bundle → writes a `--patch` config override and preflights it with `--dump-config` → boots a Host with `--no-open --port 0` → authenticates through `/connect` → asserts the plugin is active, all 6 routes, the packaged snapshot's categories and skill count with source coordinates and the served `client.js`, then runs a full install (`SKILL.md` + `.financial-skills.json` provenance including `sourceType`) and uninstall (moved to `.trash`) against a local `plugins/<id>/` fixture (the format-2-compatible layout). No model tokens are spent.
 
 Details, troubleshooting and log locations: [docs/E2E.md](docs/E2E.md).
 

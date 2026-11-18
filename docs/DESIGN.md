@@ -123,7 +123,7 @@
 | `offline: true`（叠加在来源上） | 跟随来源 | 跟随来源 | 「离线模式：当前展示的是随包快照或本地缓存，不是实时目录…」+ 重试 | 有 |
 | `error` 存在 | 跟随来源 | 跟随来源 | 额外一行「目录抓取异常：<原因>」 | — |
 
-页面在快照/缓存/离线时**不清空内容**：仍可浏览 9 类 17 条、看详情、复制 SkillHub 命令；
+页面在快照/缓存/离线时**不清空内容**：仍可浏览完整清单、看详情、复制 SkillHub 命令；
 安装与卸载仍走宿主（宿主会自己给出网络错误）。任何错误都落在行内文本，不弹 `alert`。
 
 ## 7. 状态矩阵
@@ -183,7 +183,7 @@
 | 刷新时整页 spinner、内容闪没 | 刷新保留内容，只禁用按钮 + 旋转图标 |
 | 隐藏 0 条分类 | 9 类全部展示，0 条给「该分类暂无工具」 |
 | 自绘焦点环 / 覆盖 `outline` | 不覆盖官方焦点样式 |
-| 搜索防抖 / 虚拟列表过度设计 | 17 条输入即筛（`trim` + 大小写不敏感） |
+| 搜索防抖 / 虚拟列表过度设计 | 全量词条输入即筛（`trim` + 大小写不敏感） |
 | 构建步骤 / JSX / npm 依赖 | 手写 module-loader bundle，只 require `react` 与官方原语 |
 | 组件内联 `<style>` 重复注入 | CSS 用 `style[data-plugin-css="dsh-financial-skills/panel.css"]` 守卫注入一次；挂 `data-plugin`/`data-plugin-css` |
 
@@ -229,9 +229,9 @@ node --test test/client-contract.test.mjs
   POST JSON body、宿主失败信封与 HTTP 状态错误；
 - **CSS**：注入一次、二次求值不重复、`data-plugin`/`data-plugin-css` 属性、无 document 时可加载；
 - **纯函数**：`filterSkills`（中英文名/摘要/标签/作者/id、分类、已安装、叠加）、
-  `categoryCounts`（9 类 17 条、0 条分类、未归类）、`summarizeMeta`（network/cache/snapshot/offline）、
+  `categoryCounts`（全量/分类计数、0 条分类、未归类）、`summarizeMeta`（network/cache/snapshot/offline）、
   `relativeTime`（刚刚/分钟/小时/天/绝对日期/非法值）、`panelId`/`panelLabel`；
-- **渲染**：页头 + 搜索 + 视图 + 10 枚分类 Pill + 17 行 + 已安装计数、行内结构（48px 字形盒、
+- **渲染**：页头 + 搜索 + 视图 + 10 枚分类 Pill + 全量技能行 + 已安装计数、行内结构（48px 字形盒、
   14/500 名称、两行摘要、Tag 元信息、官方 Button 动作）、视图/分类/搜索/空态交互、
   加载骨架、首次加载失败重试、刷新 `?refresh=1` 失败降级、快照/离线标注、
   详情 Modal（`MarkdownText`/元信息/footer 动作/proprietary 提示/复制失败回退）、安装与卸载调用宿主路由。
